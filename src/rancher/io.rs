@@ -1,32 +1,33 @@
 pub enum Input {
-    Combo(Vec<From>),
-    Single(From),
+    Combo(Vec<On>),
+    Single(On),
 }
 
-pub enum From {
-    Key(Key),
-    Mouse(Mouse),
+pub enum On {
+    Key(Button),
+    Mouse(When),
+}
+
+pub enum When {
+    Hover,
+    Down(Mouse),
+    Up(Mouse),
+    Press(Mouse),
+}
+
+pub enum Button {
+    Down(Key),
+    Up(Key),
+    Press(Key),
 }
 
 pub enum Mouse {
-    Hover,
-    Down(MAtom),
-    Up(MAtom),
-    Press(MAtom),
+    Left,
+    Right,
+    Middle,
 }
 
 pub enum Key {
-    Down(KAtom),
-    Up(KAtom),
-    Press(KAtom),
-}
-
-pub enum MAtom {
-    LeftMouse,
-    RightMouse,
-    MiddleMouse,
-}
-pub enum KAtom {
     A,
     W,
     S,

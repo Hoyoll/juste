@@ -22,7 +22,6 @@ pub struct Color {
 
 pub struct Properties {
     pad: Pad,
-    pos: Vec2,
     color: Color,
 }
 
@@ -48,22 +47,18 @@ impl Bound {
     }
 }
 
-#[derive(Hash, PartialEq, Eq)]
-pub enum State {
-    Default,
-    When(&'static str),
-}
-
 pub struct Event {
     events: HashMap<&'static str, fn(&mut Genus)>,
-    when: HashMap<&'static str, Input>,
+    pub single: HashMap<&'static str, Input>,
+    pub combo: HashMap<&'static str, Input>,
 }
 
 impl Event {
     pub fn new() -> Self {
         Self {
             events: HashMap::new(),
-            when: HashMap::new(),
+            single: HashMap::new(),
+            combo: HashMap::new(),
         }
     }
 
@@ -72,7 +67,10 @@ impl Event {
     }
 
     pub fn when(&mut self, input: Input, whistle: &'static str) {
-        self.when.insert(whistle, input);
+        match input {
+            Input::Combo(_) => self.combo.insert(whistle, input),
+            Input::Single(_) => self.single.insert(whistle, input),
+        };
     }
 
     pub fn call(&mut self, whistle: &'static str) -> Option<&for<'a> fn(&'a mut Genus)> {
@@ -81,9 +79,19 @@ impl Event {
 }
 
 pub enum Genus {
-    Box { dim: Vec2, prop: Properties },
-    Img { file_name: String, prop: Properties },
-    Text { text: String, prop: Properties },
+    Box {
+        dim: Vec2,
+        prop: Properties,
+    },
+    Img {
+        file_name: String,
+        prop: Properties,
+    },
+    Text {
+        text: String,
+        font_path: &'static str,
+        prop: Properties,
+    },
 }
 
 pub struct Element {
@@ -103,24 +111,16 @@ impl Element {
         }
     }
 
-    pub fn hear(&mut self, whistle: &'static str) {
-        if let Some(event) = self.event.as_mut() {
-            if let Some(fun) = event.call(whistle).as_ref() {
-                fun(&mut self.genus)
-            }
-        }
-    }
-
     pub fn add_event(&mut self, event: Event) {
         self.event = Some(event);
     }
 
-    pub fn add_child(&mut self, id: usize) {
+    pub fn add_child(&mut self, children: usize) {
         match self.childs.as_mut() {
             Some(childs) => {
-                childs.push(id);
+                childs.push(children);
             }
-            None => self.childs = Some(vec![id]),
+            None => self.childs = Some(vec![children]),
         }
     }
 }
