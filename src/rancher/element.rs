@@ -1,11 +1,11 @@
 use super::{io::Input, vector::Vec2};
-use std::{collections::HashMap, vec};
+use std::vec;
 
 pub struct Pad {
-    pub top: f32,
-    pub low: f32,
-    pub right: f32,
-    pub left: f32,
+    pub top: u32,
+    pub low: u32,
+    pub right: u32,
+    pub left: u32,
 }
 
 pub struct Bound {
@@ -13,92 +13,60 @@ pub struct Bound {
     pub dim: Vec2,
 }
 
-pub struct Color {
-    pub r: f32,
-    pub g: f32,
-    pub b: f32,
-    pub a: f32,
+pub struct Style {
+    pad: Pad,
+    color: [u8; 4],
 }
 
-pub struct Properties {
-    pad: Pad,
-    color: Color,
+pub enum Dimension {
+    Window,
+    Man(f32),
 }
 
 impl Bound {
-    pub fn new(width: f32, height: f32) -> Self {
+    pub fn new(width: u32, height: u32) -> Self {
         Self {
-            pos: Vec2::new(width, height),
-            dim: Vec2::new(0.0, 0.0),
+            dim: Vec2::new(width, height),
+            pos: Vec2::new(0, 0),
         }
     }
 
-    pub fn get_dim(self) -> Vec2 {
-        self.dim
-    }
-
-    pub fn get_pos(self) -> Vec2 {
-        self.pos
-    }
-
-    pub fn set_pos(&mut self, x: f32, y: f32) {
+    pub fn set_pos(&mut self, x: u32, y: u32) {
         self.pos.x = x;
         self.pos.y = y;
     }
 }
 
-pub struct Event {
-    events: HashMap<&'static str, fn(&mut Genus)>,
-    pub single: HashMap<&'static str, Input>,
-    pub combo: HashMap<&'static str, Input>,
-}
-
-impl Event {
-    pub fn new() -> Self {
-        Self {
-            events: HashMap::new(),
-            single: HashMap::new(),
-            combo: HashMap::new(),
-        }
-    }
-
-    pub fn on(&mut self, whistle: &'static str, fun: fn(&mut Genus)) {
-        self.events.insert(whistle, fun);
-    }
-
-    pub fn when(&mut self, input: Input, whistle: &'static str) {
-        match input {
-            Input::Combo(_) => self.combo.insert(whistle, input),
-            Input::Single(_) => self.single.insert(whistle, input),
-        };
-    }
-
-    pub fn call(&mut self, whistle: &'static str) -> Option<&for<'a> fn(&'a mut Genus)> {
-        self.events.get(whistle)
-    }
+pub enum Tag {
+    None,
+    Id(i32),
+    Name(String),
 }
 
 pub enum Genus {
     Box {
         dim: Vec2,
-        prop: Properties,
+        style: Style,
+        height: Dimension,
+        width: Dimension,
     },
     Img {
         file_name: String,
-        prop: Properties,
+        style: Style,
     },
     Text {
         text: String,
         font_path: &'static str,
-        prop: Properties,
+        style: Style,
     },
 }
 
 pub struct Element {
     pub genus: Genus,
-    pub event: Option<Event>,
-    pub composer: Option<Bound>,
-    pub childs: Option<Vec<usize>>,
+    pub event: Option<fn(&mut Element, Option<&Input>, &Vec<Element>)>,
+    pub tag: Tag,
+    pub bound: Option<Bound>,
+    pub children: Option<Vec<Element>>,
 }
 
 impl Element {
@@ -106,21 +74,29 @@ impl Element {
         Self {
             genus: genus_type,
             event: None,
-            composer: None,
-            childs: None,
+            tag: Tag::None,
+            bound: None,
+            children: None,
         }
     }
 
-    pub fn add_event(&mut self, event: Event) {
+    pub fn add_event(&mut self, event: fn(&mut Element, Option<&Input>, &Vec<Element>)) {
         self.event = Some(event);
     }
 
-    pub fn add_child(&mut self, children: usize) {
-        match self.childs.as_mut() {
+    pub fn add_child(&mut self, children: Element) -> &mut Self {
+        match self.children.as_mut() {
             Some(childs) => {
                 childs.push(children);
             }
-            None => self.childs = Some(vec![children]),
+            None => self.children = Some(vec![children]),
+        }
+        self
+    }
+
+    pub fn listen(&mut self, input: Option<&Input>, cluster: &Vec<Element>) {
+        if let Some(events) = self.event.as_ref() {
+            events(self, input, cluster)
         }
     }
 }
