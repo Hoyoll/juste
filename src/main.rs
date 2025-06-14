@@ -66,7 +66,6 @@ impl<'a> ApplicationHandler for App<'a> {
                     let _ = pixels.resize_surface(new_size.width, new_size.height);
                 }
             }
-
             _ => (),
         }
     }

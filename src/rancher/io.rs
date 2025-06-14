@@ -1,40 +1,71 @@
 use std::collections::HashSet;
 
+use super::vector::Vec2;
+
 pub enum Input {
     Combo(HashSet<On>),
     Single(On),
+    None,
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum On {
     Key(Button),
     Mouse(When),
+    Window(Win),
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+pub enum Win {
+    Resize { width: u32, height: u32 },
+    Move(Vec2),
+    Close,
+    Cursor(Point),
+    Scroll { delta: Delta, phase: Phase },
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+pub enum Phase {
+    Start,
+    Move,
+    End,
+    Cancel,
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+pub enum Delta {
+    Pixel(Vec2),
+    Line(Vec2),
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+pub enum Point {
+    Moved(Vec2),
+    Enter,
+    Left,
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum When {
     Hover,
-    Moved(i32),
-    Down(Mouse),
-    Up(Mouse),
+    Release(Mouse),
     Press(Mouse),
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Button {
-    Down(Key),
-    Up(Key),
+    Release(Key),
     Press(Key),
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Mouse {
     Left,
     Right,
     Middle,
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Key {
     A,
     B,

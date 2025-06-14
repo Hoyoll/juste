@@ -49,6 +49,7 @@ pub enum Genus {
         style: Style,
         height: Dimension,
         width: Dimension,
+        radius: u32,
     },
     Img {
         file_name: String,
@@ -56,14 +57,14 @@ pub enum Genus {
     },
     Text {
         text: String,
-        font_path: &'static str,
+        font_path: String,
         style: Style,
     },
 }
 
 pub struct Element {
     pub genus: Genus,
-    pub event: Option<fn(&mut Element, Option<&Input>, &Vec<Element>)>,
+    pub event: Option<fn(&mut Element, &Input)>,
     pub tag: Tag,
     pub bound: Option<Bound>,
     pub children: Option<Vec<Element>>,
@@ -80,7 +81,7 @@ impl Element {
         }
     }
 
-    pub fn add_event(&mut self, event: fn(&mut Element, Option<&Input>, &Vec<Element>)) {
+    pub fn add_event(&mut self, event: fn(&mut Element, &Input)) {
         self.event = Some(event);
     }
 
@@ -94,9 +95,9 @@ impl Element {
         self
     }
 
-    pub fn listen(&mut self, input: Option<&Input>, cluster: &Vec<Element>) {
+    pub fn listen(&mut self, input: &Input) {
         if let Some(events) = self.event.as_ref() {
-            events(self, input, cluster)
+            events(self, input)
         }
     }
 }
