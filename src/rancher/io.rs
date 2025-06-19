@@ -1,7 +1,5 @@
 use std::collections::HashSet;
 
-use super::vector::Vec2;
-
 pub enum Input {
     Combo(HashSet<On>),
     Single(On),
@@ -18,7 +16,7 @@ pub enum On {
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Win {
     Resize { width: u32, height: u32 },
-    Move(Vec2),
+    Move { x: i32, y: i32 },
     Close,
     Cursor(Point),
     Scroll { delta: Delta, phase: Phase },
@@ -34,13 +32,13 @@ pub enum Phase {
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Delta {
-    Pixel(Vec2),
-    Line(Vec2),
+    Pixel { x: u32, y: u32 },
+    Line { x: u32, y: u32 },
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Point {
-    Moved(Vec2),
+    Moved { x: i32, y: i32 },
     Enter,
     Left,
 }

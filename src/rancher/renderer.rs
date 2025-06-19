@@ -1,13 +1,19 @@
+use std::{any::Any, collections::HashSet, mem::replace, rc::Rc, sync::Arc};
 
-use std::{collections::HashSet, mem::replace, sync::Arc};
-
-use pixels::{ Pixels, SurfaceTexture};
+use pixels::{Pixels, SurfaceTexture, wgpu::naga::StructMember};
+use tiny_skia::{Color, Pixmap};
 use winit::{
-    application::ApplicationHandler, event::{ ElementState, MouseButton, WindowEvent}, event_loop::{ ActiveEventLoop, EventLoop}, keyboard::{KeyCode, PhysicalKey}, window::{Window, WindowAttributes, WindowId}
-    
+    application::ApplicationHandler,
+    event::{ElementState, MouseButton, MouseScrollDelta, StartCause, TouchPhase, WindowEvent},
+    event_loop::{ActiveEventLoop, EventLoop},
+    keyboard::{KeyCode, PhysicalKey},
+    window::{Window, WindowAttributes, WindowId},
 };
 
-use super::{element::Element, io::{Button, Input, Key, Mouse, On, When, Win}, vector::Vec2};
+use super::{
+    element::{Code, Element, Genus, Island},
+    io::{Button, Delta, Input, Key, Mouse, On, Phase, Point, When, Win},
+};
 
 pub fn run<T: ApplicationHandler>(renderer: &mut T) {
     let event_loop = EventLoop::new().unwrap();
@@ -15,39 +21,69 @@ pub fn run<T: ApplicationHandler>(renderer: &mut T) {
 }
 
 struct Renderer<'a> {
-    elements: &'a mut Element,
+    islands: &'a mut Island<'a>,
     attr: WindowAttributes,
     window: Option<Arc<Window>>,
     pixels: Option<Pixels<'a>>,
+    canvas: Option<Pixmap>,
     input: Input,
-    bucket: Option<HashSet<On>>
+    bucket: Option<HashSet<On>>,
 }
 
 impl<'a> Renderer<'a> {
-    pub fn build(elements: &'a mut Element, attr: WindowAttributes) -> Self {
+    pub fn build(islands: &'a mut Island<'a>, attr: WindowAttributes) -> Self {
         Self {
-            elements,
+            islands,
             attr,
             window: None,
             pixels: None,
+            canvas: None,
             input: Input::None,
-            bucket: None
+            bucket: None,
         }
     }
 
-    fn draw(&mut self, event_loop: &ActiveEventLoop) {
-        if let Some(pixels) = self.pixels.as_mut() {
-            let frame = pixels.frame_mut();
-            frame.fill(0); // Clear to black
+    fn render_pass(&mut self, island: &mut Island) {
+        for i in 0..island.member.len() {
+            let code = {
+                let member = &mut island.member[i];
+                member.listen(&self.input)
+            };
+            island.hear(code);
+            self.dim(&mut island.member[i]);
+        }
+    }
 
-            // Example: draw red rectangle
-            draw_rect(frame, 100, 100, 100, 50, [255, 0, 0, 255], 640);
-            draw_circle(frame, 120, 200, 50, [0, 0, 255, 255], 640, 480);
+    fn dim(&mut self, element: &mut Element) {
+        let mut bound = &mut element.bound;
+        match &mut element.genus {
+            Genus::Box {
+                style,
+                height,
+                width,
+                radius,
+            } => {}
+            Genus::Img { file_name, style } => {}
+            Genus::Text {
+                text,
+                size,
+                font_path,
+                style,
+            } => {}
+        }
+    }
+
+    fn pos(&mut self, element: &mut Element) {}
+
+    fn draw(&mut self, event_loop: &ActiveEventLoop) {
+        if let Some(pixels) = &mut self.pixels.as_mut() {
+            let frame = pixels.frame_mut();
+            let canvas = self.canvas.as_mut().unwrap();
+            canvas.fill(Color::WHITE);
+            frame.copy_from_slice(canvas.data());
             if pixels.render().is_err() {
                 eprintln!("Render error");
                 event_loop.exit();
-            } else {
-                self.window.as_ref().unwrap().request_redraw(); // Continuous redraw
             }
         }
     }
@@ -70,9 +106,7 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    fn check_io(&mut self) {
-        self.elements.listen(&self.input);
-    }
+    fn check_io(&mut self) {}
 
     fn clean_pipe(&mut self) {
         if let Input::Combo(mut hash) = replace(&mut self.input, Input::None) {
@@ -80,7 +114,6 @@ impl<'a> Renderer<'a> {
             self.bucket = Some(hash);
         }
     }
-   
 
     fn key_filter(&self, key: KeyCode) -> Key {
         //to-do i suppose
@@ -92,76 +125,114 @@ impl<'a> Renderer<'a> {
 }
 
 impl<'a> ApplicationHandler for Renderer<'a> {
-    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        // Create window
-        let window = Arc::new(event_loop.create_window(self.attr.clone()).unwrap());
+    fn new_events(&mut self, event_loop: &ActiveEventLoop, cause: StartCause) {}
 
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        self.window.as_ref().unwrap().request_redraw();
+    }
+
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        let window = Arc::new(event_loop.create_window(self.attr.clone()).unwrap());
         let size = window.inner_size();
         let surface_texture = SurfaceTexture::new(size.width, size.height, window.clone());
-
-        let pixels = Pixels::new(640, 480, surface_texture).expect("Failed to create Pixels");
+        let pixels =
+            Pixels::new(size.width, size.height, surface_texture).expect("failed to create Pixels");
         self.window = Some(window);
         self.pixels = Some(pixels);
-
+        self.canvas = Pixmap::new(size.width, size.height);
         self.window.as_ref().unwrap().request_redraw();
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
         match event {
-            WindowEvent::KeyboardInput {device_id: _, event, .. } => {
-                
+            WindowEvent::KeyboardInput {
+                device_id: _,
+                event,
+                ..
+            } => {
                 if let PhysicalKey::Code(code) = event.physical_key {
                     let key = self.key_filter(code);
-                        
+
                     let when = match event.state {
                         ElementState::Pressed => Button::Press(key),
                         ElementState::Released => Button::Release(key),
                     };
-                    self.input_pool(On::Key(when));                
-                 }   
+                    self.input_pool(On::Key(when));
+                }
             }
 
-            WindowEvent::MouseInput {device_id: _, state, button } => {
-                let mouse = self.mouse_filter(button);        
+            WindowEvent::MouseInput {
+                device_id: _,
+                state,
+                button,
+            } => {
+                let mouse = self.mouse_filter(button);
                 let when = match state {
-                    ElementState::Pressed => When::Press(mouse)
-                    ElementState::Released => When::Release(mouse)
+                    ElementState::Pressed => When::Press(mouse),
+                    ElementState::Released => When::Release(mouse),
                 };
                 self.input_pool(On::Mouse(when));
             }
-            
+
+            WindowEvent::CloseRequested => {
+                self.input_pool(On::Window(Win::Close));
+                self.check_io();
+                event_loop.exit();
+            }
+
+            WindowEvent::Resized(new_size) => match &mut self.pixels.as_mut() {
+                Some(pixels) => {
+                    pixels.resize_surface(new_size.width, new_size.height);
+                    self.canvas = Pixmap::new(new_size.width, new_size.height);
+                    self.input_pool(On::Window(Win::Resize {
+                        width: new_size.width,
+                        height: new_size.height,
+                    }));
+                }
+                _ => (),
+            },
+
+            WindowEvent::Moved(pos) => {
+                self.input_pool(On::Window(Win::Move { x: pos.x, y: pos.y }));
+            }
+
+            WindowEvent::MouseWheel {
+                device_id: _,
+                delta,
+                phase,
+            } => {
+                let delt = match delta {
+                    MouseScrollDelta::LineDelta(x, y) => Delta::Line {
+                        x: x as u32,
+                        y: y as u32,
+                    },
+                    MouseScrollDelta::PixelDelta(size) => Delta::Pixel {
+                        x: size.x as u32,
+                        y: size.y as u32,
+                    },
+                };
+                let phase = match phase {
+                    TouchPhase::Started => Phase::Start,
+                    TouchPhase::Moved => Phase::Move,
+                    TouchPhase::Ended => Phase::End,
+                    TouchPhase::Cancelled => Phase::Cancel,
+                };
+                self.input_pool(On::Window(Win::Scroll { delta: delt, phase }));
+            }
+
+            WindowEvent::CursorEntered { device_id: _ } => {
+                self.input_pool(On::Window(Win::Cursor(Point::Enter)));
+            }
+
+            WindowEvent::CursorLeft { device_id: _ } => {
+                self.input_pool(On::Window(Win::Cursor(Point::Left)));
+            }
+
             WindowEvent::RedrawRequested => {
                 self.draw(event_loop);
             }
 
-            WindowEvent::CloseRequested => {
-                println!("The close button was pressed; stopping");
-                event_loop.exit();
-            }
-
-            WindowEvent::Resized(new_size) => {
-                println!("Window resized!");
-                if let Some(pixels) = self.pixels.as_mut() {
-                    let _ = pixels.resize_surface(new_size.width, new_size.height);
-                }
-            }
-
-            WindowEvent::Moved(pos) => {
-                self.input_pool(On::Window(Win::Move(Vec2::new(pos.x as u32, pos.y as u32))));
-            }
-
-            WindowEvent::MouseWheel { device_id: _, delta, phase } => {
-                match delta {
-                    
-                }
-                self.input_pool(On::Window(Win::Scroll { line_delta: , pixel_delta: () });
-
-                match phase {
-                    
-                }
-            }
-
-            _ => ()
+            _ => (),
         }
     }
 }
@@ -171,9 +242,7 @@ fn draw_rect(frame: &mut [u8], x: u32, y: u32, w: u32, h: u32, color: [u8; 4], s
     const BYTE: u32 = 4;
     for row in y..(y + h) {
         for col in x..(x + w) {
-            // Calculate the index in the flat RGBA buffer
             let idx = get_frame_index(row, col, screen_width, BYTE);
-
             if idx + 3 < len {
                 frame[idx..idx + 4].copy_from_slice(&color);
             }
@@ -196,8 +265,6 @@ fn draw_circle(
 ) {
     let len = frame.len();
     const BYTE: u32 = 4;
-
-    // Bounding box of the circle
     let x_min = (cx - radius).max(0);
     let x_max = (cx + radius).min(screen_width as i32 - 1);
     let y_min = (cy - radius).max(0);

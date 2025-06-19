@@ -1859,7 +1859,9 @@ checksum = "74765f6d916ee2faa39bc8e68e4f3ed8949b48cccdac59983d287a7cb71ce9c5"
 name = "rancher"
 version = "0.1.0"
 dependencies = [
+ "ab_glyph",
  "pixels",
+ "tiny-skia 0.11.4",
  "tokio",
  "wcanvas",
  "winit 0.30.11",
@@ -2282,6 +2284,7 @@ dependencies = [
  "bytemuck",
  "cfg-if",
  "log",
+ "png",
  "tiny-skia-path 0.11.4",
 ]
 

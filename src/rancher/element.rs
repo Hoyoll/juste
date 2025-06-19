@@ -1,5 +1,7 @@
 use super::{io::Input, vector::Vec2};
-use std::vec;
+use std::{collections::HashMap, i8, vec};
+
+pub type Code = i8;
 
 pub struct Pad {
     pub top: u32,
@@ -37,15 +39,14 @@ impl Bound {
     }
 }
 
-pub enum Tag {
+pub enum Tag<'a> {
     None,
     Id(i32),
-    Name(String),
+    Name(&'a str),
 }
 
 pub enum Genus {
     Box {
-        dim: Vec2,
         style: Style,
         height: Dimension,
         width: Dimension,
@@ -57,47 +58,72 @@ pub enum Genus {
     },
     Text {
         text: String,
+        size: u32,
         font_path: String,
         style: Style,
     },
 }
 
-pub struct Element {
-    pub genus: Genus,
-    pub event: Option<fn(&mut Element, &Input)>,
-    pub tag: Tag,
-    pub bound: Option<Bound>,
-    pub children: Option<Vec<Element>>,
+pub struct Island<'a> {
+    pub member: Vec<Element<'a>>,
+    event: HashMap<Code, fn(&mut Vec<Element<'a>>)>,
 }
 
-impl Element {
+impl<'a> Island<'a> {
+    pub fn new() -> Self {
+        Self {
+            member: vec![],
+            event: HashMap::new(),
+        }
+    }
+
+    pub fn add_event(&mut self, code: Code, fun: fn(&mut Vec<Element<'a>>)) {
+        self.event.insert(code, fun);
+    }
+
+    pub fn hear(&mut self, code: Option<Code>) {
+        if let Some(c) = code.as_ref() {
+            match &mut self.event.get(c) {
+                Some(fun) => fun(&mut self.member),
+                _ => (),
+            }
+        }
+    }
+}
+
+pub struct Element<'a> {
+    pub genus: Genus,
+    pub event: Option<fn(&mut Element, &Input) -> Code>,
+    pub tag: Tag<'a>,
+    pub bound: Bound,
+    pub children: Option<Island<'a>>,
+}
+
+impl<'a> Element<'a> {
     pub fn new(genus_type: Genus) -> Self {
         Self {
             genus: genus_type,
             event: None,
             tag: Tag::None,
-            bound: None,
+            bound: Bound::new(0, 0),
             children: None,
         }
     }
 
-    pub fn add_event(&mut self, event: fn(&mut Element, &Input)) {
+    pub fn add_event(&mut self, event: fn(&mut Element, &Input) -> Code) {
         self.event = Some(event);
     }
 
-    pub fn add_child(&mut self, children: Element) -> &mut Self {
-        match self.children.as_mut() {
-            Some(childs) => {
-                childs.push(children);
-            }
-            None => self.children = Some(vec![children]),
-        }
+    pub fn add_island(&mut self, island: Island<'a>) -> &mut Self {
+        self.children = Some(island);
         self
     }
 
-    pub fn listen(&mut self, input: &Input) {
+    pub fn listen(&mut self, input: &Input) -> Option<Code> {
         if let Some(events) = self.event.as_ref() {
-            events(self, input)
+            Some(events(self, input))
+        } else {
+            None
         }
     }
 }
