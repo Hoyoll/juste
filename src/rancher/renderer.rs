@@ -1,17 +1,22 @@
-use std::{any::Any, collections::HashSet, mem::replace, rc::Rc, sync::Arc};
+use std::{
+    collections::HashSet,
+    mem::replace,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
-use pixels::{Pixels, SurfaceTexture, wgpu::naga::StructMember};
+use pixels::{Pixels, SurfaceTexture, wgpu::Instance};
 use tiny_skia::{Color, Pixmap};
 use winit::{
     application::ApplicationHandler,
     event::{ElementState, MouseButton, MouseScrollDelta, StartCause, TouchPhase, WindowEvent},
-    event_loop::{ActiveEventLoop, EventLoop},
+    event_loop::{self, ActiveEventLoop, ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowAttributes, WindowId},
 };
 
 use super::{
-    element::{Code, Element, Genus, Island},
+    element::{Element, Genus, Island},
     io::{Button, Delta, Input, Key, Mouse, On, Phase, Point, When, Win},
 };
 
@@ -43,17 +48,15 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    fn render_pass(&mut self, island: &mut Island) {
-        for i in 0..island.member.len() {
-            let code = {
-                let member = &mut island.member[i];
-                member.listen(&self.input)
-            };
-            island.hear(code);
-            self.dim(&mut island.member[i]);
-        }
-    }
-
+    // fn dim_pass(&mut self, island: &mut Island) {
+    //     for i in 0..island.member.len() {
+    //         let mut member = &mut island.member[i];
+    //         if let Some(isle) = member.children.as_mut() {
+    //             self.dim_pass(isle);
+    //         }
+    //         self.dim(&mut member);
+    //     }
+    // }
     fn dim(&mut self, element: &mut Element) {
         let mut bound = &mut element.bound;
         match &mut element.genus {
@@ -80,6 +83,7 @@ impl<'a> Renderer<'a> {
             let frame = pixels.frame_mut();
             let canvas = self.canvas.as_mut().unwrap();
             canvas.fill(Color::WHITE);
+            dim(self.islands);
             frame.copy_from_slice(canvas.data());
             if pixels.render().is_err() {
                 eprintln!("Render error");
@@ -103,6 +107,7 @@ impl<'a> Renderer<'a> {
             Input::Combo(hash) => {
                 hash.insert(event);
             }
+            _ => (),
         }
     }
 
@@ -124,11 +129,58 @@ impl<'a> Renderer<'a> {
     }
 }
 
-impl<'a> ApplicationHandler for Renderer<'a> {
-    fn new_events(&mut self, event_loop: &ActiveEventLoop, cause: StartCause) {}
+fn pos(island: &mut Island, canvas: &mut Pixmap) {
+    for i in 0..island.member.len() {
+        let member = &mut island.member[i];
+        real_pos(member, canvas);
+    }
+    pos(island, canvas);
+}
 
-    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
-        self.window.as_ref().unwrap().request_redraw();
+fn real_pos(element: &mut Element, canvas: &mut Pixmap) {}
+
+fn dim(island: &mut Island) {
+    for i in 0..island.member.len() {
+        let member = &mut island.member[i];
+        if let Some(isle) = &mut member.children {
+            dim(isle);
+        }
+        real_dim(member);
+    }
+}
+
+fn real_dim(element: &mut Element) {
+    let mut bound = &mut element.bound;
+    match &mut element.genus {
+        Genus::Box {
+            style,
+            height,
+            width,
+            radius,
+        } => {}
+        Genus::Img { file_name, style } => {}
+        Genus::Text {
+            text,
+            size,
+            font_path,
+            style,
+        } => {}
+    }
+}
+
+impl<'a> ApplicationHandler for Renderer<'a> {
+    fn new_events(&mut self, event_loop: &ActiveEventLoop, cause: StartCause) {
+        match cause {
+            StartCause::ResumeTimeReached { .. } => {
+                self.check_io();
+                self.draw(event_loop);
+                self.window.as_ref().unwrap().request_redraw();
+                event_loop.set_control_flow(ControlFlow::WaitUntil(
+                    Instant::now() + Duration::from_millis(16),
+                ));
+            }
+            _ => (),
+        }
     }
 
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
@@ -140,7 +192,7 @@ impl<'a> ApplicationHandler for Renderer<'a> {
         self.window = Some(window);
         self.pixels = Some(pixels);
         self.canvas = Pixmap::new(size.width, size.height);
-        self.window.as_ref().unwrap().request_redraw();
+        event_loop.set_control_flow(ControlFlow::WaitUntil(Instant::now()));
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {

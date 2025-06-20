@@ -1,8 +1,11 @@
 use std::collections::HashSet;
 
+use super::element::Code;
+
 pub enum Input {
     Combo(HashSet<On>),
     Single(On),
+    Custom(Code),
     None,
 }
 

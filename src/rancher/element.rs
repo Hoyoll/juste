@@ -1,7 +1,10 @@
 use super::{io::Input, vector::Vec2};
-use std::{collections::HashMap, i8, vec};
+use std::{i8, vec};
 
-pub type Code = i8;
+pub enum Code {
+    Str(String),
+    Num(i8),
+}
 
 pub struct Pad {
     pub top: u32,
@@ -22,7 +25,7 @@ pub struct Style {
 
 pub enum Dimension {
     Window,
-    Man(f32),
+    Man(u32),
 }
 
 impl Bound {
@@ -66,25 +69,25 @@ pub enum Genus {
 
 pub struct Island<'a> {
     pub member: Vec<Element<'a>>,
-    event: HashMap<Code, fn(&mut Vec<Element<'a>>)>,
+    event: Option<fn(&mut Code, &mut Vec<Element<'a>>)>,
 }
 
 impl<'a> Island<'a> {
     pub fn new() -> Self {
         Self {
             member: vec![],
-            event: HashMap::new(),
+            event: None,
         }
     }
 
-    pub fn add_event(&mut self, code: Code, fun: fn(&mut Vec<Element<'a>>)) {
-        self.event.insert(code, fun);
+    pub fn add_event(&mut self, fun: fn(&mut Code, &mut Vec<Element<'a>>)) {
+        self.event = Some(fun);
     }
 
     pub fn hear(&mut self, code: Option<Code>) {
-        if let Some(c) = code.as_ref() {
-            match &mut self.event.get(c) {
-                Some(fun) => fun(&mut self.member),
+        if let Some(mut c) = code {
+            match &mut self.event.as_mut() {
+                Some(fun) => fun(&mut c, &mut self.member),
                 _ => (),
             }
         }
