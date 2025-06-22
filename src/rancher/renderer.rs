@@ -1,23 +1,24 @@
 use std::{
-    collections::HashSet,
-    mem::replace,
+    collections::{HashMap, HashSet},
+    mem::{replace, take},
     sync::Arc,
     time::{Duration, Instant},
 };
 
-use pixels::{Pixels, SurfaceTexture, wgpu::Instance};
+use pixels::{Pixels, SurfaceTexture};
 use tiny_skia::{Color, Pixmap};
 use winit::{
     application::ApplicationHandler,
     event::{ElementState, MouseButton, MouseScrollDelta, StartCause, TouchPhase, WindowEvent},
-    event_loop::{self, ActiveEventLoop, ControlFlow, EventLoop},
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowAttributes, WindowId},
 };
 
 use super::{
-    element::{Element, Genus, Island},
+    element::{Code, Element, Genus, Island},
     io::{Button, Delta, Input, Key, Mouse, On, Phase, Point, When, Win},
+    vector::Vec2,
 };
 
 pub fn run<T: ApplicationHandler>(renderer: &mut T) {
@@ -27,63 +28,40 @@ pub fn run<T: ApplicationHandler>(renderer: &mut T) {
 
 struct Renderer<'a> {
     islands: &'a mut Island<'a>,
+    messages: HashMap<i8, Code>,
     attr: WindowAttributes,
     window: Option<Arc<Window>>,
     pixels: Option<Pixels<'a>>,
     canvas: Option<Pixmap>,
     input: Input,
     bucket: Option<HashSet<On>>,
+    m_pos: Vec2,
 }
 
 impl<'a> Renderer<'a> {
     pub fn build(islands: &'a mut Island<'a>, attr: WindowAttributes) -> Self {
         Self {
             islands,
+            messages: HashMap::new(),
             attr,
             window: None,
             pixels: None,
             canvas: None,
             input: Input::None,
             bucket: None,
-        }
-    }
-
-    // fn dim_pass(&mut self, island: &mut Island) {
-    //     for i in 0..island.member.len() {
-    //         let mut member = &mut island.member[i];
-    //         if let Some(isle) = member.children.as_mut() {
-    //             self.dim_pass(isle);
-    //         }
-    //         self.dim(&mut member);
-    //     }
-    // }
-    fn dim(&mut self, element: &mut Element) {
-        let mut bound = &mut element.bound;
-        match &mut element.genus {
-            Genus::Box {
-                style,
-                height,
-                width,
-                radius,
-            } => {}
-            Genus::Img { file_name, style } => {}
-            Genus::Text {
-                text,
-                size,
-                font_path,
-                style,
-            } => {}
+            m_pos: Vec2::new(0, 0),
         }
     }
 
     fn pos(&mut self, element: &mut Element) {}
 
     fn draw(&mut self, event_loop: &ActiveEventLoop) {
-        if let Some(pixels) = &mut self.pixels.as_mut() {
+        if let Some(pixels) = self.pixels.as_mut() {
             let frame = pixels.frame_mut();
             let canvas = self.canvas.as_mut().unwrap();
             canvas.fill(Color::WHITE);
-            dim(self.islands);
+            dim(self.islands, &self.input, &mut self.messages);
+            pos(self.islands, canvas);
             frame.copy_from_slice(canvas.data());
             if pixels.render().is_err() {
                 eprintln!("Render error");
@@ -129,23 +107,63 @@ impl<'a> Renderer<'a> {
     }
 }
 
+fn io(island: &mut Island, input: Input, mouse_pos: &Vec2, bucket: &Option<HashSet<On>>) {
+    for i in 0..island.member.len() {
+        let member = &mut island.member[i];
+        if let Some(isle) = &mut member.children.as_mut() {
+            io(isle, input, mouse_pos, bucket);
+        }
+        io_real(member, input, mouse_pos, bucket);
+    }
+}
+
+fn io_real(
+    element: &mut Element,
+    input: &mut Input,
+    mouse_pos: &Vec2,
+    bucket: &Option<HashSet<On>>,
+) {
+}
+
 fn pos(island: &mut Island, canvas: &mut Pixmap) {
     for i in 0..island.member.len() {
         let member = &mut island.member[i];
         real_pos(member, canvas);
+        if let Some(isle) = member.children.as_mut() {
+            pos(isle, canvas);
+        }
     }
-    pos(island, canvas);
 }
 
 fn real_pos(element: &mut Element, canvas: &mut Pixmap) {}
 
-fn dim(island: &mut Island) {
-    for i in 0..island.member.len() {
-        let member = &mut island.member[i];
-        if let Some(isle) = &mut member.children {
-            dim(isle);
+// fn dim(island: &mut Island, input: &mut Input) {
+//     let members = take(&mut island.member);
+//     for mut member in members {
+//         let code = member.listen(input);
+//         island.hear(code);
+//         if let Some(ref mut isle) = member.children {
+//             dim(isle, input);
+//         }
+//         real_dim(&mut member);
+//         island.member.push(member);
+//     }
+// }
+fn dim(island: &mut Island, input: &Input, bus: &mut HashMap<i8, Code>) {
+    let len = island.member.len();
+    for i in 0..len {
+        let mem = island.member.get_mut(i);
+        let c: Option<Code> = mem.and_then(|m| m.listen(input));
+        if let Some((idx, code)) = island.hear(c) {
+            bus.insert(idx, code);
         }
-        real_dim(member);
+        island.deliver(bus);
+        if let Some(member) = island.member.get_mut(i) {
+            if let Some(isle) = &mut member.children.as_mut() {
+                dim(isle, input, bus);
+            }
+            real_dim(member);
+        }
     }
 }
 
@@ -280,8 +298,21 @@ impl<'a> ApplicationHandler for Renderer<'a> {
                 self.input_pool(On::Window(Win::Cursor(Point::Left)));
             }
 
+            WindowEvent::CursorMoved {
+                device_id: _,
+                position,
+            } => {
+                self.m_pos.x = position.x as u32;
+                self.m_pos.y = position.y as u32;
+            }
+
             WindowEvent::RedrawRequested => {
+                self.input_pool(On::Mouse(When::Move {
+                    x: self.m_pos.x,
+                    y: self.m_pos.y,
+                }));
                 self.draw(event_loop);
+                self.clean_pipe();
             }
 
             _ => (),

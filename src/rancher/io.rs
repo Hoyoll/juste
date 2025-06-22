@@ -41,14 +41,13 @@ pub enum Delta {
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Point {
-    Moved { x: i32, y: i32 },
     Enter,
     Left,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum When {
-    Hover,
+    Move { x: u32, y: u32 },
     Release(Mouse),
     Press(Mouse),
 }

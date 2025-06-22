@@ -1,9 +1,11 @@
 use super::{io::Input, vector::Vec2};
-use std::{i8, vec};
+use std::{collections::HashMap, i8, vec};
 
 pub enum Code {
     Str(String),
     Num(i8),
+    Pair(i8, String),
+    None,
 }
 
 pub struct Pad {
@@ -69,7 +71,8 @@ pub enum Genus {
 
 pub struct Island<'a> {
     pub member: Vec<Element<'a>>,
-    event: Option<fn(&mut Code, &mut Vec<Element<'a>>)>,
+    event: Option<fn(&mut Code, &mut Vec<Element<'a>>) -> Option<(i8, Code)>>,
+    subscribe: Option<fn(&mut Vec<Element>, &mut HashMap<i8, Code>)>,
 }
 
 impl<'a> Island<'a> {
@@ -77,26 +80,39 @@ impl<'a> Island<'a> {
         Self {
             member: vec![],
             event: None,
+            subscribe: None,
         }
     }
 
-    pub fn add_event(&mut self, fun: fn(&mut Code, &mut Vec<Element<'a>>)) {
+    pub fn add_event(&mut self, fun: fn(&mut Code, &mut Vec<Element<'a>>) -> Option<(i8, Code)>) {
         self.event = Some(fun);
     }
 
-    pub fn hear(&mut self, code: Option<Code>) {
+    pub fn hear(&mut self, code: Option<Code>) -> Option<(i8, Code)> {
         if let Some(mut c) = code {
-            match &mut self.event.as_mut() {
+            match self.event.as_mut() {
                 Some(fun) => fun(&mut c, &mut self.member),
-                _ => (),
+                _ => None,
             }
+        } else {
+            None
+        }
+    }
+
+    pub fn add_subcriber(&mut self, fun: fn(&mut Vec<Element>, &mut HashMap<i8, Code>)) {
+        self.subscribe = Some(fun);
+    }
+
+    pub fn deliver(&mut self, bus: &mut HashMap<i8, Code>) {
+        if let Some(fun) = self.subscribe.as_mut() {
+            fun(&mut self.member, bus);
         }
     }
 }
 
 pub struct Element<'a> {
     pub genus: Genus,
-    pub event: Option<fn(&mut Element, &Input) -> Code>,
+    pub event: Option<fn(&mut Element, &Input) -> Option<Code>>,
     pub tag: Tag<'a>,
     pub bound: Bound,
     pub children: Option<Island<'a>>,
@@ -113,7 +129,7 @@ impl<'a> Element<'a> {
         }
     }
 
-    pub fn add_event(&mut self, event: fn(&mut Element, &Input) -> Code) {
+    pub fn add_event(&mut self, event: fn(&mut Element, &Input) -> Option<Code>) {
         self.event = Some(event);
     }
 
@@ -124,7 +140,7 @@ impl<'a> Element<'a> {
 
     pub fn listen(&mut self, input: &Input) -> Option<Code> {
         if let Some(events) = self.event.as_ref() {
-            Some(events(self, input))
+            events(self, input)
         } else {
             None
         }
