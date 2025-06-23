@@ -1,6 +1,53 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, mem::replace};
 
-use super::element::Code;
+use super::{element::Code, vector::Vec2};
+
+pub struct Io {
+    pub input: Input,
+    pub mouse_pos: Vec2<u32>,
+    pub window_pos: Vec2<i32>,
+    pub window_size: Vec2<u32>,
+    pub scroll: Option<(Phase, Delta)>,
+    bucket: Option<HashSet<On>>,
+}
+
+impl Io {
+    pub fn new() -> Self {
+        Self {
+            input: Input::None,
+            mouse_pos: Vec2::new(0, 0),
+            window_pos: Vec2::new(0, 0),
+            window_size: Vec2::new(0, 0),
+            scroll: None,
+            bucket: None,
+        }
+    }
+
+    pub fn pool(&mut self, event: On) {
+        match &mut self.input {
+            Input::None => {
+                self.input = Input::Single(event);
+            }
+
+            Input::Single(input) => {
+                let mut hash = self.bucket.take().unwrap_or_else(HashSet::new);
+                hash.insert(*input);
+                hash.insert(event);
+                self.input = Input::Combo(hash);
+            }
+            Input::Combo(hash) => {
+                hash.insert(event);
+            }
+            _ => (),
+        }
+    }
+    pub fn clean(&mut self) {
+        if let Input::Combo(mut hash) = replace(&mut self.input, Input::None) {
+            hash.clear();
+            self.bucket = Some(hash);
+        }
+    }
+}
 
 pub enum Input {
     Combo(HashSet<On>),
@@ -18,11 +65,8 @@ pub enum On {
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Win {
-    Resize { width: u32, height: u32 },
-    Move { x: i32, y: i32 },
     Close,
     Cursor(Point),
-    Scroll { delta: Delta, phase: Phase },
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]

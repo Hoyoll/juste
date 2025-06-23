@@ -1,11 +1,11 @@
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
-pub struct Vec2 {
-    pub x: u32,
-    pub y: u32,
+pub struct Vec2<T> {
+    pub x: T,
+    pub y: T,
 }
 
-impl Vec2 {
-    pub fn new(x: u32, y: u32) -> Self {
+impl<T> Vec2<T> {
+    pub fn new(x: T, y: T) -> Self {
         Self { x, y }
     }
 }

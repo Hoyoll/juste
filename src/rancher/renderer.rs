@@ -1,6 +1,5 @@
 use std::{
     collections::{HashMap, HashSet},
-    mem::{replace, take},
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -17,8 +16,7 @@ use winit::{
 
 use super::{
     element::{Code, Element, Genus, Island},
-    io::{Button, Delta, Input, Key, Mouse, On, Phase, Point, When, Win},
-    vector::Vec2,
+    io::{Button, Delta, Io, Key, Mouse, On, Phase, Point, When, Win},
 };
 
 pub fn run<T: ApplicationHandler>(renderer: &mut T) {
@@ -33,9 +31,8 @@ struct Renderer<'a> {
     window: Option<Arc<Window>>,
     pixels: Option<Pixels<'a>>,
     canvas: Option<Pixmap>,
-    input: Input,
+    io: Io,
     bucket: Option<HashSet<On>>,
-    m_pos: Vec2,
 }
 
 impl<'a> Renderer<'a> {
@@ -47,20 +44,17 @@ impl<'a> Renderer<'a> {
             window: None,
             pixels: None,
             canvas: None,
-            input: Input::None,
+            io: Io::new(),
             bucket: None,
-            m_pos: Vec2::new(0, 0),
         }
     }
-
-    fn pos(&mut self, element: &mut Element) {}
 
     fn draw(&mut self, event_loop: &ActiveEventLoop) {
         if let Some(pixels) = self.pixels.as_mut() {
             let frame = pixels.frame_mut();
             let canvas = self.canvas.as_mut().unwrap();
             canvas.fill(Color::WHITE);
-            dim(self.islands, &self.input, &mut self.messages);
+            dim(self.islands, &self.io, &mut self.messages);
             pos(self.islands, canvas);
             frame.copy_from_slice(canvas.data());
             if pixels.render().is_err() {
@@ -69,62 +63,15 @@ impl<'a> Renderer<'a> {
             }
         }
     }
-
-    fn input_pool(&mut self, event: On) {
-        match &mut self.input {
-            Input::None => {
-                self.input = Input::Single(event);
-            }
-
-            Input::Single(input) => {
-                let mut hash = self.bucket.take().unwrap_or_else(HashSet::new);
-                hash.insert(*input);
-                hash.insert(event);
-                self.input = Input::Combo(hash);
-            }
-            Input::Combo(hash) => {
-                hash.insert(event);
-            }
-            _ => (),
-        }
-    }
-
-    fn check_io(&mut self) {}
-
-    fn clean_pipe(&mut self) {
-        if let Input::Combo(mut hash) = replace(&mut self.input, Input::None) {
-            hash.clear();
-            self.bucket = Some(hash);
-        }
-    }
-
-    fn key_filter(&self, key: KeyCode) -> Key {
-        //to-do i suppose
-    }
-
-    fn mouse_filter(&self, button: MouseButton) -> Mouse {
-        //to-do i suppose
-    }
 }
 
-fn io(island: &mut Island, input: Input, mouse_pos: &Vec2, bucket: &Option<HashSet<On>>) {
-    for i in 0..island.member.len() {
-        let member = &mut island.member[i];
-        if let Some(isle) = &mut member.children.as_mut() {
-            io(isle, input, mouse_pos, bucket);
-        }
-        io_real(member, input, mouse_pos, bucket);
-    }
+fn key_filter(key: KeyCode) -> Key {
+    //to-do i suppose
 }
 
-fn io_real(
-    element: &mut Element,
-    input: &mut Input,
-    mouse_pos: &Vec2,
-    bucket: &Option<HashSet<On>>,
-) {
+fn mouse_filter(button: MouseButton) -> Mouse {
+    //to-do i suppose
 }
-
 fn pos(island: &mut Island, canvas: &mut Pixmap) {
     for i in 0..island.member.len() {
         let member = &mut island.member[i];
@@ -137,19 +84,8 @@ fn pos(island: &mut Island, canvas: &mut Pixmap) {
 
 fn real_pos(element: &mut Element, canvas: &mut Pixmap) {}
 
-// fn dim(island: &mut Island, input: &mut Input) {
-//     let members = take(&mut island.member);
-//     for mut member in members {
-//         let code = member.listen(input);
-//         island.hear(code);
-//         if let Some(ref mut isle) = member.children {
-//             dim(isle, input);
-//         }
-//         real_dim(&mut member);
-//         island.member.push(member);
-//     }
-// }
-fn dim(island: &mut Island, input: &Input, bus: &mut HashMap<i8, Code>) {
+// DANGEROUS!
+fn dim(island: &mut Island, input: &Io, bus: &mut HashMap<i8, Code>) {
     let len = island.member.len();
     for i in 0..len {
         let mem = island.member.get_mut(i);
@@ -159,7 +95,7 @@ fn dim(island: &mut Island, input: &Input, bus: &mut HashMap<i8, Code>) {
         }
         island.deliver(bus);
         if let Some(member) = island.member.get_mut(i) {
-            if let Some(isle) = &mut member.children.as_mut() {
+            if let Some(isle) = member.children.as_mut() {
                 dim(isle, input, bus);
             }
             real_dim(member);
@@ -190,7 +126,6 @@ impl<'a> ApplicationHandler for Renderer<'a> {
     fn new_events(&mut self, event_loop: &ActiveEventLoop, cause: StartCause) {
         match cause {
             StartCause::ResumeTimeReached { .. } => {
-                self.check_io();
                 self.draw(event_loop);
                 self.window.as_ref().unwrap().request_redraw();
                 event_loop.set_control_flow(ControlFlow::WaitUntil(
@@ -221,13 +156,14 @@ impl<'a> ApplicationHandler for Renderer<'a> {
                 ..
             } => {
                 if let PhysicalKey::Code(code) = event.physical_key {
-                    let key = self.key_filter(code);
+                    let key = key_filter(code);
 
                     let when = match event.state {
                         ElementState::Pressed => Button::Press(key),
                         ElementState::Released => Button::Release(key),
                     };
-                    self.input_pool(On::Key(when));
+
+                    self.io.pool(On::Key(when));
                 }
             }
 
@@ -241,29 +177,27 @@ impl<'a> ApplicationHandler for Renderer<'a> {
                     ElementState::Pressed => When::Press(mouse),
                     ElementState::Released => When::Release(mouse),
                 };
-                self.input_pool(On::Mouse(when));
+                self.io.pool(On::Mouse(when));
             }
 
             WindowEvent::CloseRequested => {
-                self.input_pool(On::Window(Win::Close));
-                self.check_io();
+                self.io.pool(On::Window(Win::Close));
                 event_loop.exit();
             }
 
-            WindowEvent::Resized(new_size) => match &mut self.pixels.as_mut() {
+            WindowEvent::Resized(new_size) => match self.pixels.as_mut() {
                 Some(pixels) => {
                     pixels.resize_surface(new_size.width, new_size.height);
                     self.canvas = Pixmap::new(new_size.width, new_size.height);
-                    self.input_pool(On::Window(Win::Resize {
-                        width: new_size.width,
-                        height: new_size.height,
-                    }));
+                    self.io.window_size.x = new_size.width;
+                    self.io.window_size.y = new_size.height;
                 }
                 _ => (),
             },
 
             WindowEvent::Moved(pos) => {
-                self.input_pool(On::Window(Win::Move { x: pos.x, y: pos.y }));
+                self.io.window_pos.x = pos.x;
+                self.io.window_pos.y = pos.y;
             }
 
             WindowEvent::MouseWheel {
@@ -287,32 +221,28 @@ impl<'a> ApplicationHandler for Renderer<'a> {
                     TouchPhase::Ended => Phase::End,
                     TouchPhase::Cancelled => Phase::Cancel,
                 };
-                self.input_pool(On::Window(Win::Scroll { delta: delt, phase }));
+                self.io.scroll = Some((phase, delt));
             }
 
             WindowEvent::CursorEntered { device_id: _ } => {
-                self.input_pool(On::Window(Win::Cursor(Point::Enter)));
+                self.io.pool(On::Window(Win::Cursor(Point::Enter)));
             }
 
             WindowEvent::CursorLeft { device_id: _ } => {
-                self.input_pool(On::Window(Win::Cursor(Point::Left)));
+                self.io.pool(On::Window(Win::Cursor(Point::Left)));
             }
 
             WindowEvent::CursorMoved {
                 device_id: _,
                 position,
             } => {
-                self.m_pos.x = position.x as u32;
-                self.m_pos.y = position.y as u32;
+                self.io.mouse_pos.x = position.x as u32;
+                self.io.mouse_pos.y = position.y as u32;
             }
 
             WindowEvent::RedrawRequested => {
-                self.input_pool(On::Mouse(When::Move {
-                    x: self.m_pos.x,
-                    y: self.m_pos.y,
-                }));
                 self.draw(event_loop);
-                self.clean_pipe();
+                self.io.clean();
             }
 
             _ => (),
