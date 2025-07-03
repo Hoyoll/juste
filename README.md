@@ -1,0 +1,1 @@
+Gui is just draw calls gated by behaviour and styling.

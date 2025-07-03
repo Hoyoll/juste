@@ -1,12 +1,13 @@
 [package]
-name = "rancher"
+name = "juste"
 version = "0.1.0"
 edition = "2024"
+license = "GPL-3.0"
+authors = ["Effendi Saputra <effendi.saputra01@gmail.com>"]
+description = "Brutalist UI engine."
+readme = "README.md"
+repository = "https://github.com/Hoyoll/juste"
+categories = ["gui", "ui", "rendering", "rust", "functional"]
+keywords = ["ui", "engine", "functional", "minimal", "brutalist"]
 
 [dependencies]
-ab_glyph = "0.2.29"
-pixels = "0.15.0"
-tiny-skia = "0.11.4"
-tokio = "1.45.1"
-wcanvas = "0.0.1"
-winit = "0.30.11"

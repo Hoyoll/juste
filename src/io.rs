@@ -1,6 +1,6 @@
 use std::{collections::HashSet, mem::replace};
 
-use super::{element::Code, vector::Vec2};
+use super::vector::Vec2;
 
 pub struct Io {
     pub input: Input,
@@ -38,7 +38,6 @@ impl Io {
             Input::Combo(hash) => {
                 hash.insert(event);
             }
-            _ => (),
         }
     }
     pub fn clean(&mut self) {
@@ -52,7 +51,6 @@ impl Io {
 pub enum Input {
     Combo(HashSet<On>),
     Single(On),
-    Custom(Code),
     None,
 }
 
@@ -77,7 +75,6 @@ pub enum Phase {
     Cancel,
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Delta {
     Pixel { x: u32, y: u32 },
     Line { x: u32, y: u32 },
@@ -91,7 +88,7 @@ pub enum Point {
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum When {
-    Move { x: u32, y: u32 },
+    // Move { x: u32, y: u32 },
     Release(Mouse),
     Press(Mouse),
 }
