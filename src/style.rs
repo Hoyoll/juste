@@ -16,26 +16,27 @@ pub enum Size {
 }
 
 pub enum Gravity {
-    Start,
-    End,
+    Horizontal,
+    Vertical
 }
 
-pub enum Prop {
-    Dim(Size, Size),
-    Color([u8; 4]),
-    Ceil(Size, Size),
-    Pad(Pad),
-    Font(&'static str, u8),
-    Gravity(Gravity)
+pub enum Style {
+    Box {
+        dim: (Size, Size),
+        ceil: (Size, Size),
+        pad: Pad,
+        gravity: Gravity,
+        color: [u8;4],
+    },
+    Text {
+        font: (&'static str, u8),
+        color: [u8;4],
+        pad: Pad
+    },
+    Img {
+        color: [u8;4],
+        pad: Pad
+    }
 }
 
-pub enum Field {
-    Color,
-    Dim,
-    Ceil,
-    Pad,
-    Font,
-    Gravity
-}
-
-pub type Sheet = HashMap<Tag, HashMap<Field, Prop>>;
+pub type Sheet = HashMap<Tag, Style>;

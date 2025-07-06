@@ -1,11 +1,18 @@
 use super::{io::Io, vector::Vec2};
 use std::{collections::HashMap, i8, vec};
 
+pub struct Bound {
+    pub pos: Vec2<u32>,
+    pub dim: Vec2<u32>,
+    pub offset: Vec2<u32>,
+}
+
 impl Bound {
     pub fn new(width: u32, height: u32) -> Self {
         Self {
             dim: Vec2::new(width, height),
             pos: Vec2::new(0, 0),
+            offset: Vec2::new(0,0),
         }
     }
 
@@ -13,17 +20,19 @@ impl Bound {
         self.pos.x = x;
         self.pos.y = y;
     }
+
+    pub fn inside(&self, point: &Vec2<u32>) -> bool {
+        (point.x >= self.pos.x) && 
+        (point.x <= self.pos.x + self.dim.x) &&
+        (point.y >= self.pos.y) &&
+        (point.y <= self.pos.y + self.dim.y) 
+    }
 }
 
 pub enum Message {
     Num(i8),
     Tup(i8, i8),
     None,
-}
-
-pub struct Bound {
-    pub pos: Vec2<u32>,
-    pub dim: Vec2<u32>,
 }
 
 pub type IOListener = fn(&mut Element, &Io) -> Message;
