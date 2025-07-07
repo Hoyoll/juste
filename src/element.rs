@@ -1,10 +1,16 @@
 use super::{io::Io, vector::Vec2};
 use std::{collections::HashMap, i8, vec};
 
+pub enum Overflow {
+    Clip { active: bool },
+    Leak,
+}
+
 pub struct Bound {
     pub pos: Vec2<u32>,
     pub dim: Vec2<u32>,
     pub offset: Vec2<u32>,
+    pub overflow: Overflow,
 }
 
 impl Bound {
@@ -12,7 +18,8 @@ impl Bound {
         Self {
             dim: Vec2::new(width, height),
             pos: Vec2::new(0, 0),
-            offset: Vec2::new(0,0),
+            offset: Vec2::new(0, 0),
+            overflow: Overflow::Clip { active: false },
         }
     }
 
@@ -22,10 +29,10 @@ impl Bound {
     }
 
     pub fn inside(&self, point: &Vec2<u32>) -> bool {
-        (point.x >= self.pos.x) && 
-        (point.x <= self.pos.x + self.dim.x) &&
-        (point.y >= self.pos.y) &&
-        (point.y <= self.pos.y + self.dim.y) 
+        (point.x >= self.pos.x)
+            && (point.x <= self.pos.x + self.dim.x)
+            && (point.y >= self.pos.y)
+            && (point.y <= self.pos.y + self.dim.y)
     }
 }
 
@@ -38,7 +45,6 @@ pub enum Message {
 pub type IOListener = fn(&mut Element, &Io) -> Message;
 pub type MessageListener = fn(&mut Element, Message) -> Option<(i8, Message)>;
 pub type SignalListener = fn(&mut Element, &mut HashMap<i8, Message>);
-
 
 #[derive(PartialEq, Eq, Hash)]
 pub enum Tag {
@@ -57,8 +63,16 @@ impl Genus {
     pub fn get_tag(&self) -> &Tag {
         match self {
             Genus::Box(tag) => tag,
-            Genus::Img(_,tag ) => tag,
-            Genus::Text(_, tag) => tag
+            Genus::Img(_, tag) => tag,
+            Genus::Text(_, tag) => tag,
+        }
+    }
+
+    pub fn replace_tag(&mut self, tag: Tag) {
+        match self {
+            Genus::Box(t) => *t = tag,
+            Genus::Img(_, t) => *t = tag,
+            Genus::Text(_, t) => *t = tag,
         }
     }
 }
