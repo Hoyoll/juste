@@ -17,7 +17,7 @@ pub enum Size {
 
 pub enum Gravity {
     Horizontal,
-    Vertical
+    Vertical,
 }
 
 pub enum Style {
@@ -26,16 +26,36 @@ pub enum Style {
         ceil: (Size, Size),
         pad: Pad,
         gravity: Gravity,
-        color: [u8;4],
+        color: [u8; 4],
     },
     Text {
         font: (&'static str, u8),
-        color: [u8;4],
-        pad: Pad
+        color: [u8; 4],
+        pad: Pad,
     },
     Img {
-        color: [u8;4],
-        pad: Pad
+        color: [u8; 4],
+        pad: Pad,
+    },
+}
+
+impl Style {
+    pub fn get_color(&self) -> &[u8; 4] {
+        match self {
+            Style::Box {
+                dim: _,
+                ceil: _,
+                pad: _,
+                gravity: _,
+                color,
+            } => color,
+            Style::Text {
+                font: _,
+                color,
+                pad: _,
+            } => color,
+            Style::Img { color, pad: _ } => color,
+        }
     }
 }
 

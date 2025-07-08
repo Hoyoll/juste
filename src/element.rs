@@ -11,6 +11,7 @@ pub struct Bound {
     pub dim: Vec2<u32>,
     pub offset: Vec2<u32>,
     pub overflow: Overflow,
+    pub shadow: [u32; 4], // native representation for padding [left, right, up, down]
 }
 
 impl Bound {
@@ -20,6 +21,7 @@ impl Bound {
             pos: Vec2::new(0, 0),
             offset: Vec2::new(0, 0),
             overflow: Overflow::Clip { active: false },
+            shadow: [0, 0, 0, 0],
         }
     }
 

@@ -4,10 +4,10 @@ use super::vector::Vec2;
 
 pub struct Io {
     pub input: Input,
-    pub mouse_pos: Vec2<u32>,
-    pub window_pos: Vec2<i32>,
+    pub mouse_pos: Vec2<f32>,
+    pub window_pos: Vec2<f32>,
     pub window_size: Vec2<u32>,
-    pub scroll: Option<(Phase, Delta)>,
+    pub scroll: f32,
     bucket: Option<HashSet<On>>,
 }
 
@@ -15,11 +15,11 @@ impl Io {
     pub fn new() -> Self {
         Self {
             input: Input::None,
-            mouse_pos: Vec2::new(0, 0),
-            window_pos: Vec2::new(0, 0),
+            mouse_pos: Vec2::new(0.0, 0.0),
+            window_pos: Vec2::new(0.0, 0.0),
             window_size: Vec2::new(0, 0),
-            scroll: None,
-            bucket: None,
+            scroll: 0.0,
+            bucket: Some(HashSet::new()),
         }
     }
 
@@ -30,7 +30,7 @@ impl Io {
             }
 
             Input::Single(input) => {
-                let mut hash = self.bucket.take().unwrap_or_else(HashSet::new);
+                let mut hash = self.bucket.take().unwrap();
                 hash.insert(*input);
                 hash.insert(event);
                 self.input = Input::Combo(hash);
@@ -191,4 +191,5 @@ pub enum Key {
     Sleep,
     Wake,
     WakeUp,
+    Null,
 }
