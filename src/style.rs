@@ -29,34 +29,16 @@ pub enum Style {
         color: [u8; 4],
     },
     Text {
-        font: (&'static str, u8),
+        font: (&'static str, f32),
         color: [u8; 4],
         pad: Pad,
+        spacing: f32,
     },
     Img {
         color: [u8; 4],
         pad: Pad,
+        scale: f32,
     },
-}
-
-impl Style {
-    pub fn get_color(&self) -> &[u8; 4] {
-        match self {
-            Style::Box {
-                dim: _,
-                ceil: _,
-                pad: _,
-                gravity: _,
-                color,
-            } => color,
-            Style::Text {
-                font: _,
-                color,
-                pad: _,
-            } => color,
-            Style::Img { color, pad: _ } => color,
-        }
-    }
 }
 
 pub type Sheet = HashMap<Tag, Style>;
