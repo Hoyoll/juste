@@ -101,8 +101,14 @@ impl Element {
         }
     }
 
-    pub fn io_listener(&mut self, event: IOListener) {
+    pub fn add_child(&mut self, element: Element) -> &mut Self {
+        self.children.push(element);
+        self
+    }
+
+    pub fn io_listener(&mut self, event: IOListener) -> &mut Self {
         self.io_listener = Some(event);
+        self
     }
 
     pub fn listen_io(&mut self, input: &Io) -> Message {
@@ -112,8 +118,9 @@ impl Element {
         }
     }
 
-    pub fn message_listener(&mut self, event: MessageListener) {
+    pub fn message_listener(&mut self, event: MessageListener) -> &mut Self {
         self.m_listener = Some(event);
+        self
     }
 
     pub fn listen_message(&mut self, message: Message) -> Option<(i8, Message)> {
@@ -123,8 +130,9 @@ impl Element {
         }
     }
 
-    pub fn signal_listener(&mut self, signal: SignalListener) {
+    pub fn signal_listener(&mut self, signal: SignalListener) -> &mut Self {
         self.signal_listener = Some(signal);
+        self
     }
 
     pub fn listen_signal(&mut self, bus: &mut HashMap<i8, Message>) {
