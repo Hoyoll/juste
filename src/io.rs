@@ -71,7 +71,6 @@ pub enum From {
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Win {
     Close,
-    Cursor(Point),
     Resize,
     Move,
 }
