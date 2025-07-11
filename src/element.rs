@@ -9,9 +9,9 @@ pub enum Overflow {
 pub struct Bound {
     pub pos: Vec2<u32>,
     pub dim: Vec2<u32>,
-    pub offset: Vec2<u32>,
+    pub offset: Vec2<f32>,
     pub overflow: Overflow,
-    pub shadow: [u32; 4], // native representation for padding [left, right, top, low]
+    pub shadow: [f32; 4], // native representation for padding [left, right, top, low]
     pub angle: f32,
 }
 
@@ -20,9 +20,9 @@ impl Bound {
         Self {
             dim: Vec2::new(width, height),
             pos: Vec2::new(0, 0),
-            offset: Vec2::new(0, 0),
+            offset: Vec2::new(0.0, 0.0),
             overflow: Overflow::Clip { active: false },
-            shadow: [0, 0, 0, 0],
+            shadow: [0.0, 0.0, 0.0, 0.0],
             angle: 0.0,
         }
     }
@@ -50,7 +50,6 @@ pub type IOListener = fn(&mut Element, &Io) -> Message;
 pub type MessageListener = fn(&mut Element, Message) -> Option<(i8, Message)>;
 pub type SignalListener = fn(&mut Element, &mut HashMap<i8, Message>);
 
-#[derive(PartialEq, Eq, Hash)]
 pub enum Tag {
     None,
     Id(i8),
@@ -62,7 +61,6 @@ pub enum Genus {
     Img(String, Tag),
     Text(String, Tag),
 }
-
 impl Genus {
     pub fn get_tag(&self) -> &Tag {
         match self {

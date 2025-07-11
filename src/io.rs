@@ -4,7 +4,7 @@ use super::vector::Vec2;
 
 pub struct Io {
     pub input: Input,
-    pub mouse_pos: Vec2<f32>,
+    pub mouse_pos: Vec2<u32>,
     pub window_pos: Vec2<f32>,
     pub window_size: Vec2<u32>,
     pub scroll: f32,
@@ -15,7 +15,7 @@ impl Io {
     pub fn new() -> Self {
         Self {
             input: Input::None,
-            mouse_pos: Vec2::new(0.0, 0.0),
+            mouse_pos: Vec2::new(0, 0),
             window_pos: Vec2::new(0.0, 0.0),
             window_size: Vec2::new(0, 0),
             scroll: 0.0,
