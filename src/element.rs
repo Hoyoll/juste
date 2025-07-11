@@ -50,6 +50,7 @@ pub type IOListener = fn(&mut Element, &Io) -> Message;
 pub type MessageListener = fn(&mut Element, Message) -> Option<(i8, Message)>;
 pub type SignalListener = fn(&mut Element, &mut HashMap<i8, Message>);
 
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Tag {
     None,
     Id(i8),
