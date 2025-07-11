@@ -7,32 +7,32 @@ pub enum Overflow {
 }
 
 pub struct Bound {
-    pub pos: Vec2<u32>,
-    pub dim: Vec2<u32>,
-    pub offset: Vec2<f32>,
+    pub pos: Vec2<i32>,
+    pub dim: Vec2<i32>,
+    pub offset: Vec2<i32>,
     pub overflow: Overflow,
-    pub shadow: [u32; 4], // native representation for padding [left, right, top, low]
+    pub shadow: [i32; 4], // native representation for padding [left, right, top, low]
     pub angle: f32,
 }
 
 impl Bound {
-    pub fn new(width: u32, height: u32) -> Self {
+    pub fn new(width: i32, height: i32) -> Self {
         Self {
             dim: Vec2::new(width, height),
             pos: Vec2::new(0, 0),
-            offset: Vec2::new(0.0, 0.0),
+            offset: Vec2::new(0, 0),
             overflow: Overflow::Clip { active: false },
             shadow: [0, 0, 0, 0],
             angle: 0.0,
         }
     }
 
-    pub fn set_pos(&mut self, x: u32, y: u32) {
+    pub fn set_pos(&mut self, x: i32, y: i32) {
         self.pos.x = x;
         self.pos.y = y;
     }
 
-    pub fn inside(&self, point: &Vec2<u32>) -> bool {
+    pub fn inside(&self, point: &Vec2<i32>) -> bool {
         (point.x >= self.pos.x)
             && (point.x <= self.pos.x + self.dim.x)
             && (point.y >= self.pos.y)

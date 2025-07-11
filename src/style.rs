@@ -3,15 +3,15 @@ use std::collections::HashMap;
 use super::element::Tag;
 
 pub struct Pad {
-    pub top: u32,
-    pub low: u32,
-    pub right: u32,
-    pub left: u32,
+    pub top: i32,
+    pub low: i32,
+    pub right: i32,
+    pub left: i32,
 }
 
 pub enum Size {
     Window,
-    Man(u32),
+    Man(i32),
     Child,
 }
 

@@ -4,9 +4,9 @@ use super::vector::Vec2;
 
 pub struct Io {
     pub input: Input,
-    pub mouse_pos: Vec2<u32>,
+    pub mouse_pos: Vec2<i32>,
     pub window_pos: Vec2<f32>,
-    pub window_size: Vec2<u32>,
+    pub window_size: Vec2<i32>,
     pub scroll: f32,
     bucket: Option<HashSet<On>>,
 }
@@ -88,15 +88,16 @@ pub enum Point {
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum When {
-    // Move { x: u32, y: u32 },
     Release(Mouse),
     Press(Mouse),
+    Down(Mouse),
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Button {
     Release(Key),
     Press(Key),
+    Down(Key),
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
