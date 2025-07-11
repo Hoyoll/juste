@@ -56,15 +56,24 @@ pub enum Input {
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum On {
-    Key(Button),
-    Mouse(When),
+    Press(From),
+    Down(From),
+    Release(From),
     Window(Win),
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+pub enum From {
+    Key(Key),
+    Mouse(Mouse),
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Win {
     Close,
     Cursor(Point),
+    Resize,
+    Move,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
@@ -75,29 +84,10 @@ pub enum Phase {
     Cancel,
 }
 
-pub enum Delta {
-    Pixel { x: u32, y: u32 },
-    Line { x: u32, y: u32 },
-}
-
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Point {
     Enter,
     Left,
-}
-
-#[derive(PartialEq, Eq, Hash, Clone, Copy)]
-pub enum When {
-    Release(Mouse),
-    Press(Mouse),
-    Down(Mouse),
-}
-
-#[derive(PartialEq, Eq, Hash, Clone, Copy)]
-pub enum Button {
-    Release(Key),
-    Press(Key),
-    Down(Key),
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
