@@ -8,6 +8,7 @@ pub struct Io {
     pub window_pos: Vec2<f32>,
     pub window_size: Vec2<i32>,
     pub scroll: f32,
+    pub file_buff: Vec<String>,
     bucket: Option<HashSet<On>>,
 }
 
@@ -19,6 +20,7 @@ impl Io {
             window_pos: Vec2::new(0.0, 0.0),
             window_size: Vec2::new(0, 0),
             scroll: 0.0,
+            file_buff: Vec::new(),
             bucket: Some(HashSet::new()),
         }
     }
