@@ -1,4 +1,4 @@
-#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(PartialEq, Debug, Eq, Hash, Clone, Copy)]
 pub struct Vec2<T> {
     pub x: T,
     pub y: T,
