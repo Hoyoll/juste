@@ -21,6 +21,6 @@ pub enum Gravity {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Style {
-    pad: Pad,
-    color: [u8; 4],
+    pub pad: Pad,
+    pub color: [u8; 4],
 }
