@@ -96,6 +96,7 @@ pub enum Mouse {
     Left,
     Right,
     Middle,
+    Null,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]

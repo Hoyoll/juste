@@ -1,11 +1,30 @@
 use super::{io::Io, vector::Vec2};
-use crate::{Gravity, Size, Style};
+use crate::{Font, Gravity, Size, Style};
 use std::{collections::HashMap, i8};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Overflow {
     Clip { active: bool },
     Leak,
+}
+
+impl Overflow {
+    pub fn make_clip(&mut self) {
+        match self {
+            Overflow::Clip { active } => {
+                *active = true;
+            }
+            _ => (),
+        }
+    }
+
+    pub fn need_clip(&mut self) -> bool {
+        if let Overflow::Clip { active: true } = self {
+            true
+        } else {
+            false
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -18,9 +37,9 @@ pub struct Bound {
     pub angle: f32,
 }
 impl Bound {
-    pub fn new(width: f32, height: f32) -> Self {
+    pub fn new() -> Self {
         Self {
-            dim: Vec2::new(width, height),
+            dim: Vec2::new(0.0, 0.0),
             pos: Vec2::new(0.0, 0.0),
             offset: Vec2::new(0.0, 0.0),
             overflow: Overflow::Clip { active: false },
@@ -32,6 +51,11 @@ impl Bound {
     pub fn set_pos(&mut self, x: f32, y: f32) {
         self.pos.x = x;
         self.pos.y = y;
+    }
+
+    pub fn set_dim(&mut self, x: f32, y: f32) {
+        self.dim.x = x;
+        self.dim.y = y;
     }
 
     pub fn inside(&self, point: &Vec2<f32>) -> bool {
@@ -80,7 +104,7 @@ pub enum Genus {
     Text {
         style: Style,
         text: String,
-        font: &'static str,
+        font: Font,
         size: f32,
         spacing: f32,
     },
