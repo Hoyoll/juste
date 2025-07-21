@@ -67,7 +67,8 @@ impl Bound {
 }
 
 pub trait Process {
-    fn transform(&mut self, element: &mut Element);
+    fn message(&mut self, _message: Message);
+    fn transform(&mut self, _element: &mut Element);
     fn destroy(&mut self);
 }
 
@@ -97,7 +98,7 @@ pub enum Genus {
     Box {
         style: Style,
         gravity: Gravity,
-        size: [Size; 2],
+        size: [Size; 2], //[width, height]
         ceil: Option<[Size; 2]>,
         children: Vec<Element>,
     },
