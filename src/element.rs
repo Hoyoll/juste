@@ -93,6 +93,12 @@ pub enum Tag {
     Tup(i8, i8),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Src {
+    Sys(String),
+    Url(String),
+}
+
 #[derive(Debug, Clone)]
 pub enum Genus {
     Box {
@@ -111,10 +117,12 @@ pub enum Genus {
     },
     Img {
         style: Style,
-        img_path: String,
+        img_path: Src,
+        fallback: Option<fn(&Io) -> Element>,
         scale: f32,
     },
 }
+
 #[derive(Debug, Clone)]
 pub struct Element {
     pub tag: Tag,
