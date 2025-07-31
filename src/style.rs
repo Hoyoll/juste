@@ -1,4 +1,4 @@
-use crate::Io;
+use crate::io::Io;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Pad {
@@ -37,18 +37,4 @@ pub enum Gravity {
 pub struct Style {
     pub pad: Pad,
     pub color: [u8; 4], // [r, g, b, a]
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
-pub enum Font {
-    File(&'static str, TTCIndex),
-    Sys(&'static str, Mode),
-}
-pub type TTCIndex = u8;
-
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
-pub enum Mode {
-    Normal,
-    Bold,
-    Italic,
 }

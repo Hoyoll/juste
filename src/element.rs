@@ -1,5 +1,5 @@
 use super::{io::Io, vector::Vec2};
-use crate::{Font, Gravity, Size, Style};
+use crate::genus::Genus;
 use std::{collections::HashMap, i8};
 
 #[derive(Debug, Clone, Copy)]
@@ -91,36 +91,6 @@ pub enum Tag {
     Prime,
     Id(i8),
     Tup(i8, i8),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Src {
-    Sys(String),
-    Url(String),
-}
-
-#[derive(Debug, Clone)]
-pub enum Genus {
-    Box {
-        style: Style,
-        gravity: Gravity,
-        size: [Size; 2], //[width, height]
-        ceil: Option<[Size; 2]>,
-        children: Vec<Element>,
-    },
-    Text {
-        style: Style,
-        text: String,
-        font: Font,
-        size: f32,
-        spacing: f32,
-    },
-    Img {
-        style: Style,
-        img_path: Src,
-        fallback: Option<fn(&Io) -> Element>,
-        scale: f32,
-    },
 }
 
 #[derive(Debug, Clone)]
