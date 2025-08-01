@@ -34,7 +34,23 @@ pub enum Gravity {
 }
 
 #[derive(Debug, Clone, Copy)]
+pub struct Color {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
+}
+
+#[derive(Debug, Clone, Copy)]
 pub struct Style {
     pub pad: Pad,
-    pub color: [u8; 4], // [r, g, b, a]
+    pub color: Color,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct TextStyle {
+    pub font: Font,
+    pub size: f32,
+    pub spacing: f32,
+    pub style: Style,
 }
