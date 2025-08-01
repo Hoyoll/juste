@@ -50,11 +50,32 @@ impl Input {
         Ok(())
     }
 
-    pub fn set_cursor(&mut self, offset: i32) {
-        self.offset = offset.clamp(0, self.stream.weight());
+    pub fn push(&mut self, token: Token) {
+        self.stream.left.push(token);
+        self.offset += 1;
+    }
+
+    pub fn pop(&mut self) -> Result<(), CursorError> {
+        if self.stream.left.pop().is_none() {
+            return Err(CursorError::BufferStart {
+                undershoot: self.offset - 1,
+            });
+        }
+
+        let new_offset = self.offset - 1;
+
+        if new_offset < 0 {
+            Err(CursorError::BufferStart {
+                undershoot: new_offset,
+            })
+        } else {
+            self.offset = new_offset;
+            Ok(())
+        }
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Stream {
     pub left: Vec<Token>,
     pub right: Vec<Token>,
@@ -87,6 +108,14 @@ impl Stream {
             }
         }
     }
+
+    pub fn iter_mut<F>(&mut self, mut fun: F)
+    where
+        F: FnMut(&mut Token),
+    {
+        self.left.iter_mut().for_each(&mut fun);
+        self.right.iter_mut().rev().for_each(&mut fun);
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -96,6 +125,7 @@ pub enum State {
     Hidden,
 }
 
+#[derive(Debug, Clone)]
 pub enum CursorError {
     BufferEnd { overshoot: i32 },
     BufferStart { undershoot: i32 },
@@ -107,16 +137,6 @@ pub enum Token {
     Char(char),
     Indent(u8),
     Break,
-}
-
-impl Token {
-    pub fn len(&self) -> i32 {
-        match self {
-            Token::Chars { chars, color: _ } => chars.len() as i32,
-            Token::Space | Token::Break => 1,
-            Token::Indent(i) => *i,
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -153,6 +173,7 @@ pub enum Font {
     File(&'static str, TTCIndex),
     Sys(&'static str, Mode),
 }
+
 pub type TTCIndex = u8;
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
