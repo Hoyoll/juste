@@ -1,5 +1,4 @@
-use super::{io::Io, vector::Vec2};
-use crate::genus::Genus;
+use crate::{genus::Genus, io::Io, util::Vec2};
 use std::{collections::HashMap, i8};
 
 #[derive(Debug, Clone, Copy)]
@@ -66,10 +65,13 @@ impl Bound {
     }
 }
 
-pub trait Process {
-    fn message(&mut self, _message: Message);
-    fn transform(&mut self, _element: &mut Element);
-    fn destroy(&mut self);
+#[derive(PartialEq, Debug, Eq, Hash, Clone, Copy)]
+pub enum Tag {
+    Def,
+    None,
+    Prime,
+    Id(i8),
+    Tup(i8, i8),
 }
 
 pub enum Message {
@@ -80,17 +82,56 @@ pub enum Message {
     Proc(Box<dyn Process>),
 }
 
+pub trait Process {
+    fn message(&mut self, message: Message);
+    fn transform(&mut self, element: &mut Element);
+    fn destroy(&mut self);
+}
+
+pub trait Transform {
+    fn io_listener(&mut self, element: &mut Element, io: &Io) -> Option<(Tag, Message)>;
+    fn signal_listener(&mut self, element: &mut Element, signal: &mut SignalBus);
+}
+
 pub type SignalBus = HashMap<Tag, Message>;
 pub type IOListener = fn(&mut Element, &Io) -> Option<(Tag, Message)>;
 pub type SignalListener = fn(&mut Element, &mut SignalBus);
 
-#[derive(PartialEq, Debug, Eq, Hash, Clone, Copy)]
-pub enum Tag {
-    Def,
-    None,
-    Prime,
-    Id(i8),
-    Tup(i8, i8),
+#[derive(Debug, Clone)]
+pub enum Listener {
+    Pure {
+        io_listener: Option<IOListener>,
+        signal_listener: Option<SignalListener>,
+    },
+    Trans(Box<dyn Transform>),
+}
+
+impl Listener {
+    pub fn listen_io(&mut self, element: &mut Element, io: &Io) -> Option<(Tag, Message)> {
+        match self {
+            Listener::Pure {
+                io_listener,
+                signal_listener: _,
+            } => match io_listener {
+                Some(fun) => fun(element, io),
+                None => None,
+            },
+            Listener::Trans(tran) => tran.io_listener(element, io),
+        }
+    }
+
+    pub fn listen_bus(&mut self, element: &mut Element, bus: &mut SignalBus) {
+        match self {
+            Listener::Pure {
+                io_listener: _,
+                signal_listener,
+            } => match signal_listener {
+                Some(fun) => fun(element, bus),
+                None => (),
+            },
+            Listener::Trans(tran) => tran.signal_listener(element, bus),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -98,29 +139,21 @@ pub struct Element {
     pub tag: Tag,
     pub genus: Genus,
     pub bound: Bound,
-    pub signal_listener: Option<SignalListener>,
-    pub io_listener: Option<IOListener>,
+    pub listener: Option<Listener>,
 }
 
 impl Element {
     pub fn listen_io(&mut self, io: &Io) -> Option<(Tag, Message)> {
-        match self.io_listener.as_ref() {
-            Some(fun) => fun(self, io),
+        match &mut self.listener {
+            Some(list) => list.listen_io(self, io),
             None => None,
         }
     }
 
     pub fn listen_signal(&mut self, bus: &mut SignalBus) {
-        match self.signal_listener.as_ref() {
-            Some(fun) => fun(self, bus),
+        match &mut self.listener {
+            Some(list) => list.listen_bus(self, bus),
             None => (),
         }
-    }
-
-    pub fn set_io_listener(&mut self, fun: IOListener) {
-        self.io_listener = Some(fun);
-    }
-    pub fn set_signal_listener(&mut self, fun: SignalListener) {
-        self.signal_listener = Some(fun);
     }
 }
