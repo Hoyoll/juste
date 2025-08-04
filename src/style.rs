@@ -1,4 +1,4 @@
-use crate::io::Io;
+use crate::{genus::Font, io::Io};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Pad {

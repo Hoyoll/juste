@@ -16,6 +16,7 @@ pub struct GapBuf<T: Clone> {
     pub right: Vec<T>,
 }
 
+#[derive(Debug, Clone)]
 pub enum BufError {
     BufEnd { overshoot: usize },
     BufStar { undershoot: usize },

@@ -38,24 +38,34 @@ pub enum State {
 }
 
 #[derive(Debug, Clone)]
-pub enum CursorError {
-    BufferEnd { overshoot: i32 },
-    BufferStart { undershoot: i32 },
-}
-
-#[derive(Debug, Clone)]
 pub struct Box {
     pub style: Style,
     pub gravity: Gravity,
     pub size: [Size; 2], //[width, height]
     pub ceil: Option<[Size; 2]>,
-    pub children: Option<GapBuf<Element>>,
+    pub children: Option<Child>,
 }
 
 #[derive(Debug, Clone)]
 pub enum Child {
     Gap(GapBuf<Element>),
     Vec(Vec<Element>),
+}
+
+impl Child {
+    pub fn iter_mut<F>(&mut self, mut fun: F)
+    where
+        F: FnMut(&mut Element),
+    {
+        match self {
+            Child::Gap(gap) => {
+                gap.iter_mut(fun);
+            }
+            Child::Vec(vec) => {
+                vec.iter_mut().for_each(fun);
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -80,8 +90,25 @@ pub struct Text {
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
 pub enum Font {
-    File(&'static str, TTCIndex),
-    Sys(&'static str, Mode),
+    File {
+        path: &'static str,
+        size: f32,
+        ttc: TTCIndex,
+    },
+    Sys {
+        name: &'static str,
+        size: f32,
+        mode: Mode,
+    },
+}
+
+impl Font {
+    pub fn get_size(&self) -> f32 {
+        match self {
+            Font::File { path: _, size, .. } => *size,
+            Font::Sys { name: _, size, .. } => *size,
+        }
+    }
 }
 
 pub type TTCIndex = u8;
