@@ -11,6 +11,7 @@ use crate::{
 pub enum Genus {
     Input(Input),
     Box(Box),
+    Cult(Box),
     Img(Image),
     Text(Text),
 }
@@ -27,7 +28,6 @@ pub struct Input {
 pub enum Token {
     Space,
     Char(char),
-    Break,
 }
 
 #[derive(Debug, Clone)]
@@ -86,37 +86,4 @@ pub enum Src {
 pub struct Text {
     pub text: String,
     pub style: TextStyle,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
-pub enum Font {
-    File {
-        path: &'static str,
-        size: f32,
-        ttc: TTCIndex,
-    },
-    Sys {
-        name: &'static str,
-        size: f32,
-        mode: Mode,
-    },
-}
-
-impl Font {
-    pub fn get_size(&self) -> f32 {
-        match self {
-            Font::File { path: _, size, .. } => *size,
-            Font::Sys { name: _, size, .. } => *size,
-        }
-    }
-}
-
-pub type TTCIndex = u8;
-
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
-pub enum Mode {
-    Normal,
-    Bold,
-    Italic,
-    BoldItalic,
 }

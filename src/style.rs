@@ -1,4 +1,4 @@
-use crate::{genus::Font, io::Io};
+use crate::io::Io;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Pad {
@@ -50,7 +50,47 @@ pub struct Style {
 #[derive(Debug, Clone, Copy)]
 pub struct TextStyle {
     pub font: Font,
-    pub size: f32,
     pub spacing: f32,
     pub style: Style,
+    pub fallback: Option<Fallback>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Fallback {
+    Static(Font),
+    List(Vec<Font>),
+    Dyn(fn(&Io) -> Font),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
+pub enum Font {
+    File {
+        path: &'static str,
+        size: f32,
+        ttc: TTCIndex,
+    },
+    Sys {
+        name: &'static str,
+        size: f32,
+        mode: Mode,
+    },
+}
+
+impl Font {
+    pub fn get_size(&self) -> f32 {
+        match self {
+            Font::File { path: _, size, .. } => *size,
+            Font::Sys { name: _, size, .. } => *size,
+        }
+    }
+}
+
+pub type TTCIndex = u8;
+
+#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
+pub enum Mode {
+    Normal,
+    Bold,
+    Italic,
+    BoldItalic,
 }

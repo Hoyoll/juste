@@ -75,7 +75,9 @@ impl<T> GapBuf<T> {
             if let Some(token) = self.left.pop() {
                 self.right.push(token);
             } else {
-                return Err(BufError { undershoot: i });
+                return Err(BufError {
+                    undershoot: amount - i,
+                });
             }
         }
         Ok(())
@@ -86,7 +88,9 @@ impl<T> GapBuf<T> {
             if let Some(token) = self.right.pop() {
                 self.left.push(token);
             } else {
-                return Err(BufError { overshoot: i });
+                return Err(BufError {
+                    overshoot: amount - i,
+                });
             }
         }
         Ok(())
