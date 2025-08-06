@@ -1,6 +1,6 @@
 use std::{collections::HashSet, mem::replace};
 
-use super::vector::Vec2;
+use crate::util::Vec2;
 
 pub struct Io {
     pub input: Input,

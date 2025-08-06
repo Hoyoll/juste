@@ -19,10 +19,10 @@ pub struct GapBuf<T: Clone> {
 #[derive(Debug, Clone)]
 pub enum BufError {
     BufEnd { overshoot: usize },
-    BufStar { undershoot: usize },
+    BufStart { undershoot: usize },
 }
 
-impl<T> GapBuf<T> {
+impl<T: Clone> GapBuf<T> {
     pub fn new() -> Self {
         Self {
             left: Vec::new(),
@@ -67,7 +67,7 @@ impl<T> GapBuf<T> {
     }
 
     pub fn weight(&mut self) -> usize {
-        (self.left.len() + self.right.len())
+        self.left.len() + self.right.len()
     }
 
     pub fn shift_left(&mut self, amount: usize) -> Result<(), BufError> {
@@ -75,7 +75,7 @@ impl<T> GapBuf<T> {
             if let Some(token) = self.left.pop() {
                 self.right.push(token);
             } else {
-                return Err(BufError {
+                return Err(BufError::BufStart {
                     undershoot: amount - i,
                 });
             }
@@ -88,7 +88,7 @@ impl<T> GapBuf<T> {
             if let Some(token) = self.right.pop() {
                 self.left.push(token);
             } else {
-                return Err(BufError {
+                return Err(BufError::BufEnd {
                     overshoot: amount - i,
                 });
             }
@@ -106,10 +106,10 @@ impl<T> GapBuf<T> {
 
     pub fn iter<F>(&mut self, fun: F)
     where
-        F: FnMut(&T),
+        F: Fn(&T),
     {
-        self.left.iter().for_each(fun);
-        self.right.iter().rev().for_each(fun);
+        self.left.iter().for_each(&fun);
+        self.right.iter().rev().for_each(&fun);
     }
 
     pub fn collect(&self) -> Vec<T> {

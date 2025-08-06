@@ -1,5 +1,5 @@
 use crate::{genus::Genus, io::Io, util::Vec2};
-use std::{collections::HashMap, i8};
+use std::{collections::HashMap, fmt, i8};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Overflow {
@@ -88,16 +88,51 @@ pub trait Process {
     fn destroy(&mut self);
 }
 
-pub trait Transform {
+pub trait Transform: TransformClone {
     fn io_listener(&mut self, element: &mut Element, io: &Io) -> Option<(Tag, Message)>;
     fn signal_listener(&mut self, element: &mut Element, signal: &mut SignalBus);
+}
+
+pub trait TransformClone {
+    fn clone_box(&self) -> Box<dyn Transform>;
+}
+
+impl<T> TransformClone for T
+where
+    T: 'static + Transform + Clone,
+{
+    fn clone_box(&self) -> Box<dyn Transform> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<dyn Transform> {
+    fn clone(&self) -> Box<dyn Transform> {
+        self.clone_box()
+    }
+}
+
+impl fmt::Debug for Listener {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Listener::Pure {
+                io_listener,
+                signal_listener,
+            } => f
+                .debug_struct("Pure")
+                .field("io_listener", io_listener)
+                .field("signal_listener", signal_listener)
+                .finish(),
+            Listener::Trans(_) => f.debug_tuple("Trans").field(&"<Transform>").finish(),
+        }
+    }
 }
 
 pub type SignalBus = HashMap<Tag, Message>;
 pub type IOListener = fn(&mut Element, &Io) -> Option<(Tag, Message)>;
 pub type SignalListener = fn(&mut Element, &mut SignalBus);
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Listener {
     Pure {
         io_listener: Option<IOListener>,
@@ -144,16 +179,18 @@ pub struct Element {
 
 impl Element {
     pub fn listen_io(&mut self, io: &Io) -> Option<(Tag, Message)> {
-        match &mut self.listener {
-            Some(list) => list.listen_io(self, io),
-            None => None,
+        if let Some(mut list) = self.listener.take() {
+            let res = list.listen_io(self, io);
+            self.listener = Some(list);
+            res
+        } else {
+            None
         }
     }
-
     pub fn listen_signal(&mut self, bus: &mut SignalBus) {
-        match &mut self.listener {
-            Some(list) => list.listen_bus(self, bus),
-            None => (),
+        if let Some(mut list) = self.listener.take() {
+            list.listen_bus(self, bus);
+            self.listener = Some(list);
         }
     }
 }

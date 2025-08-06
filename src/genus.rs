@@ -4,7 +4,7 @@ use crate::{
     element::Element,
     io::Io,
     style::{Color, Gravity, Size, Style, TextStyle},
-    util::GapBuf,
+    util::{GapBuf, Vec2},
 };
 
 #[derive(Debug, Clone)]
@@ -18,10 +18,18 @@ pub enum Genus {
 
 #[derive(Debug, Clone)]
 pub struct Input {
-    pub cursor: Box,
+    pub cursor: Cursor,
     pub state: State,
     pub stream: GapBuf<Token>,
     pub style: TextStyle,
+    pub size: Vec2<Size>,
+    pub token_size: Vec2<f32>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Cursor {
+    pub size: Vec2<Size>, //[width, height]
+    pub color: Color,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -41,8 +49,8 @@ pub enum State {
 pub struct Box {
     pub style: Style,
     pub gravity: Gravity,
-    pub size: [Size; 2], //[width, height]
-    pub ceil: Option<[Size; 2]>,
+    pub size: Vec2<Size>,         //[width, height]
+    pub ceil: Option<Vec2<Size>>, //[width, height]
     pub children: Option<Child>,
 }
 
@@ -53,7 +61,7 @@ pub enum Child {
 }
 
 impl Child {
-    pub fn iter_mut<F>(&mut self, mut fun: F)
+    pub fn iter_mut<F>(&mut self, fun: F)
     where
         F: FnMut(&mut Element),
     {

@@ -52,32 +52,31 @@ pub struct TextStyle {
     pub font: Font,
     pub spacing: f32,
     pub style: Style,
-    pub fallback: Option<Fallback>,
+    pub fallback: Option<Fallback<Font>>,
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum Fallback {
-    Static(Font),
-    List(Vec<Font>),
-    Dyn(fn(&Io) -> Font),
+pub enum Fallback<T: Clone> {
+    Static(T),
+    Dyn(fn(&Io) -> T),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
 pub enum Font {
     File {
         path: &'static str,
-        size: f32,
+        size: usize,
         ttc: TTCIndex,
     },
     Sys {
         name: &'static str,
-        size: f32,
+        size: usize,
         mode: Mode,
     },
 }
 
 impl Font {
-    pub fn get_size(&self) -> f32 {
+    pub fn get_size(&mut self) -> usize {
         match self {
             Font::File { path: _, size, .. } => *size,
             Font::Sys { name: _, size, .. } => *size,
