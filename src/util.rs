@@ -66,7 +66,7 @@ impl<T: Clone> GapBuf<T> {
         }
     }
 
-    pub fn weight(&mut self) -> usize {
+    pub fn weight(&self) -> usize {
         self.left.len() + self.right.len()
     }
 
@@ -104,12 +104,12 @@ impl<T: Clone> GapBuf<T> {
         self.right.iter_mut().rev().for_each(&mut fun);
     }
 
-    pub fn iter<F>(&mut self, fun: F)
+    pub fn iter<F>(&self, mut fun: F)
     where
-        F: Fn(&T),
+        F: FnMut(&T),
     {
-        self.left.iter().for_each(&fun);
-        self.right.iter().rev().for_each(&fun);
+        self.left.iter().for_each(&mut fun);
+        self.right.iter().rev().for_each(&mut fun);
     }
 
     pub fn collect(&self) -> Vec<T> {

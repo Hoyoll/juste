@@ -3,7 +3,7 @@ use std::char;
 use crate::{
     element::Element,
     io::Io,
-    style::{Color, Gravity, Size, Style, TextStyle},
+    style::{Color, ColorId, Gravity, Origin, Size, Style, TextStyle},
     util::{GapBuf, Vec2},
 };
 
@@ -22,15 +22,22 @@ pub struct Input {
     pub state: State,
     pub stream: GapBuf<Token>,
     pub style: TextStyle,
-    pub size: Vec2<Size>,
     pub token_size: Vec2<f32>,
+    //pub size: Vec2<Size>,
+    //pub baseline_char: char,
 }
 
 #[derive(Debug, Clone)]
 pub struct Cursor {
-    pub size: Vec2<Size>, //[width, height]
-    pub color: Color,
+    pub width: f32,
+    pub color: Origin<ColorId, Color>,
 }
+
+// #[derive(Debug, Clone, Copy)]
+// pub enum Unit<T: Clone> {
+//     Man(T),
+//     Batch(T),
+// }
 
 #[derive(Debug, Clone, Copy)]
 pub enum Token {
@@ -49,15 +56,59 @@ pub enum State {
 pub struct Box {
     pub style: Style,
     pub gravity: Gravity,
+    pub overflow: Overflow,
     pub size: Vec2<Size>,         //[width, height]
     pub ceil: Option<Vec2<Size>>, //[width, height]
     pub children: Option<Child>,
+}
+
+impl Box {
+    pub fn new() -> Self {
+        Self {
+            style: Style::new(),
+            gravity: Gravity::Horizontal,
+            overflow: Overflow::Leak,
+            size: Vec2::new(Size::Man(10.0), Size::Man(10.0)),
+            ceil: None,
+            children: None,
+        }
+    }
+
+    pub fn with_children(&mut self, children: Child) -> &Self {
+        self.children = Some(children);
+        self
+    }
 }
 
 #[derive(Debug, Clone)]
 pub enum Child {
     Gap(GapBuf<Element>),
     Vec(Vec<Element>),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Overflow {
+    Clip { active: bool },
+    Leak,
+}
+
+impl Overflow {
+    pub fn make_clip(&mut self) {
+        match self {
+            Overflow::Clip { active } => {
+                *active = true;
+            }
+            _ => (),
+        }
+    }
+
+    pub fn need_clip(&mut self) -> bool {
+        if let Overflow::Clip { active: true } = self {
+            true
+        } else {
+            false
+        }
+    }
 }
 
 impl Child {
@@ -74,13 +125,27 @@ impl Child {
             }
         }
     }
+
+    pub fn iter<F>(&self, fun: F)
+    where
+        F: FnMut(&Element),
+    {
+        match self {
+            Child::Gap(gap) => {
+                gap.iter(fun);
+            }
+            Child::Vec(vec) => {
+                vec.iter().for_each(fun);
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
 pub struct Image {
     pub style: Style,
     pub img_path: Src,
-    pub fallback: Option<fn(&Io) -> Element>,
+    pub fallback: fn(&Io) -> Element,
     pub scale: f32,
 }
 

@@ -2,38 +2,12 @@ use crate::{genus::Genus, io::Io, util::Vec2};
 use std::{collections::HashMap, fmt, i8};
 
 #[derive(Debug, Clone, Copy)]
-pub enum Overflow {
-    Clip { active: bool },
-    Leak,
-}
-
-impl Overflow {
-    pub fn make_clip(&mut self) {
-        match self {
-            Overflow::Clip { active } => {
-                *active = true;
-            }
-            _ => (),
-        }
-    }
-
-    pub fn need_clip(&mut self) -> bool {
-        if let Overflow::Clip { active: true } = self {
-            true
-        } else {
-            false
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
 pub struct Bound {
     pub pos: Vec2<f32>,
     pub dim: Vec2<f32>,
     pub offset: Vec2<f32>,
-    pub overflow: Overflow,
     pub shadow: [f32; 4], // native representation for padding [left, right, top, low]
-    pub angle: f32,
+    pub angle: Option<f32>,
 }
 impl Bound {
     pub fn new() -> Self {
@@ -41,9 +15,8 @@ impl Bound {
             dim: Vec2::new(0.0, 0.0),
             pos: Vec2::new(0.0, 0.0),
             offset: Vec2::new(0.0, 0.0),
-            overflow: Overflow::Clip { active: false },
             shadow: [0.0, 0.0, 0.0, 0.0],
-            angle: 0.0,
+            angle: None,
         }
     }
 
