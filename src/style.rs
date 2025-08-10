@@ -1,6 +1,6 @@
 use std::{collections::HashMap, hash::Hash};
 
-use crate::io::Io;
+use crate::{element::Listeners, io::Io};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Pad {
@@ -62,32 +62,22 @@ pub enum Origin<T: Eq + Hash, V> {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Style {
-    pub pad: Origin<PadId, Pad>,
-    pub color: Origin<ColorId, Color>,
+    pub pad: PadId,
+    pub color: ColorId,
 }
 
 impl Style {
     pub fn new() -> Self {
         Self {
-            pad: Origin::Raw(Pad::new()),
-            color: Origin::Raw(Color::new()),
+            pad: DEFAULT,
+            color: DEFAULT,
         }
-    }
-
-    pub fn with_color(&mut self, color: Origin<ColorId, Color>) -> &Self {
-        self.color = color;
-        self
-    }
-
-    pub fn with_pad(&mut self, pad: Origin<PadId, Pad>) -> &Self {
-        self.pad = pad;
-        self
     }
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct TextStyle {
-    pub font: Origin<FontId, Font>,
+    pub font: FontId,
     //pub spacing: f32,
     pub style: Style,
     //pub fallback: fn(&Io) -> Origin<FontId, Font>,
@@ -96,11 +86,7 @@ pub struct TextStyle {
 impl TextStyle {
     pub fn new() -> Self {
         Self {
-            font: Origin::Raw(Font::Sys {
-                name: "Arial",
-                size: 10,
-                mode: Mode::Normal,
-            }),
+            font: DEFAULT,
             style: Style::new(),
         }
     }
@@ -139,6 +125,8 @@ pub enum Mode {
     BoldItalic,
 }
 
+pub const DEFAULT: i8 = -1;
+
 pub type FontId = i8;
 pub type ColorId = i8;
 pub type PadId = i8;
@@ -151,4 +139,30 @@ pub struct Sheet {
     pub fonts: FontSheet,
     pub colors: ColorSheet,
     pub pads: PadSheet,
+    pub listener: Listeners,
+}
+
+impl Sheet {
+    pub fn new() -> Self {
+        let mut fonts = HashMap::new();
+        fonts.insert(
+            DEFAULT,
+            Font::Sys {
+                name: "Arial",
+                size: 14,
+                mode: Mode::Normal,
+            },
+        );
+        let mut colors = HashMap::new();
+        colors.insert(DEFAULT, Color::new());
+        let mut pads = HashMap::new();
+        pads.insert(DEFAULT, Pad::new());
+        let listener = HashMap::new();
+        Self {
+            fonts,
+            colors,
+            pads,
+            listener,
+        }
+    }
 }

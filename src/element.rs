@@ -101,9 +101,29 @@ impl fmt::Debug for Listener {
     }
 }
 
-pub type SignalBus = HashMap<Tag, Message>;
+//pub type SignalBus = HashMap<Tag, Message>;
 pub type IOListener = fn(&mut Element, &Io) -> Option<(Tag, Message)>;
 pub type SignalListener = fn(&mut Element, &mut SignalBus);
+pub type ListenerId = i8;
+pub type Listeners = HashMap<ListenerId, Listener>;
+
+pub struct SignalBus {
+    pub bus: HashMap<Tag, Message>,
+    pub queue: Vec<Message>,
+}
+
+impl SignalBus {
+    pub fn new() -> Self {
+        Self {
+            bus: HashMap::new(),
+            queue: Vec::new(),
+        }
+    }
+
+    pub fn insert(&mut self, id: Tag, msg: Message) {
+        self.bus.insert(id, msg);
+    }
+}
 
 #[derive(Clone)]
 pub enum Listener {
@@ -147,23 +167,5 @@ pub struct Element {
     pub tag: Tag,
     pub genus: Genus,
     pub bound: Bound,
-    pub listener: Option<Listener>,
-}
-
-impl Element {
-    pub fn listen_io(&mut self, io: &Io) -> Option<(Tag, Message)> {
-        if let Some(mut list) = self.listener.take() {
-            let res = list.listen_io(self, io);
-            self.listener = Some(list);
-            res
-        } else {
-            None
-        }
-    }
-    pub fn listen_signal(&mut self, bus: &mut SignalBus) {
-        if let Some(mut list) = self.listener.take() {
-            list.listen_bus(self, bus);
-            self.listener = Some(list);
-        }
-    }
+    pub listener: Option<ListenerId>,
 }

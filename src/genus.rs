@@ -20,11 +20,9 @@ pub enum Genus {
 pub struct Input {
     pub cursor: Cursor,
     pub state: State,
-    pub stream: GapBuf<Token>,
+    pub stream: GapBuf<char>,
     pub style: TextStyle,
     pub token_size: Vec2<f32>,
-    //pub size: Vec2<Size>,
-    //pub baseline_char: char,
 }
 
 #[derive(Debug, Clone)]
