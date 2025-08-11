@@ -47,9 +47,9 @@ impl Color {
     pub fn new() -> Self {
         Self {
             r: 0,
-            g: 0,
+            g: 255,
             b: 0,
-            a: 0,
+            a: 255,
         }
     }
 }

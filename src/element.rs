@@ -169,3 +169,15 @@ pub struct Element {
     pub bound: Bound,
     pub listener: Option<ListenerId>,
 }
+
+impl Element {
+    pub fn position<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&mut Bound),
+    {
+        match self.genus {
+            Genus::Float(_) => (),
+            _ => f(&mut self.bound),
+        }
+    }
+}

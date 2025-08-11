@@ -3,15 +3,16 @@ use std::char;
 use crate::{
     element::Element,
     io::Io,
-    style::{Color, ColorId, Gravity, Origin, Size, Style, TextStyle},
+    style::{ColorId, Gravity, Size, Style, TextStyle},
     util::{GapBuf, Vec2},
 };
 
 #[derive(Debug, Clone)]
 pub enum Genus {
     Input(Input),
-    Box(Box),
-    Cult(Box),
+    Frame(Frame),
+    Cult(Frame),
+    Float(Frame),
     Img(Image),
     Text(Text),
 }
@@ -20,7 +21,7 @@ pub enum Genus {
 pub struct Input {
     pub cursor: Cursor,
     pub state: State,
-    pub stream: GapBuf<char>,
+    pub stream: GapBuf<Token>,
     pub style: TextStyle,
     pub token_size: Vec2<f32>,
 }
@@ -28,7 +29,7 @@ pub struct Input {
 #[derive(Debug, Clone)]
 pub struct Cursor {
     pub width: f32,
-    pub color: Origin<ColorId, Color>,
+    pub color: ColorId,
 }
 
 // #[derive(Debug, Clone, Copy)]
@@ -37,10 +38,11 @@ pub struct Cursor {
 //     Batch(T),
 // }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Token {
     Space,
-    Char(char),
+    Break,
+    Char(GapBuf<char>),
 }
 
 #[derive(Debug, Clone)]
@@ -51,7 +53,7 @@ pub enum State {
 }
 
 #[derive(Debug, Clone)]
-pub struct Box {
+pub struct Frame {
     pub style: Style,
     pub gravity: Gravity,
     pub overflow: Overflow,
@@ -60,13 +62,13 @@ pub struct Box {
     pub children: Option<Child>,
 }
 
-impl Box {
+impl Frame {
     pub fn new() -> Self {
         Self {
             style: Style::new(),
             gravity: Gravity::Horizontal,
             overflow: Overflow::Leak,
-            size: Vec2::new(Size::Man(10.0), Size::Man(10.0)),
+            size: Vec2::new(Size::Window, Size::Window),
             ceil: None,
             children: None,
         }
