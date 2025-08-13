@@ -21,6 +21,7 @@ pub enum Genus {
 pub struct Input {
     pub cursor: Cursor,
     pub state: State,
+    pub offset: Vec2<f32>,
     pub stream: GapBuf<Token>,
     pub style: TextStyle,
     pub token_size: Vec2<f32>,
@@ -31,7 +32,6 @@ pub struct Cursor {
     pub width: f32,
     pub color: ColorId,
 }
-
 // #[derive(Debug, Clone, Copy)]
 // pub enum Unit<T: Clone> {
 //     Man(T),
@@ -57,6 +57,7 @@ pub struct Frame {
     pub style: Style,
     pub gravity: Gravity,
     pub overflow: Overflow,
+    pub child_offset: Vec2<f32>,
     pub size: Vec2<Size>,         //[width, height]
     pub ceil: Option<Vec2<Size>>, //[width, height]
     pub children: Option<Child>,
@@ -68,6 +69,7 @@ impl Frame {
             style: Style::new(),
             gravity: Gravity::Horizontal,
             overflow: Overflow::Leak,
+            child_offset: Vec2::new(0.0, 0.0),
             size: Vec2::new(Size::Window, Size::Window),
             ceil: None,
             children: None,

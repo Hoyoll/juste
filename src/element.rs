@@ -5,7 +5,6 @@ use std::{collections::HashMap, fmt, i8};
 pub struct Bound {
     pub pos: Vec2<f32>,
     pub dim: Vec2<f32>,
-    pub offset: Vec2<f32>,
     pub shadow: [f32; 4], // native representation for padding [left, right, top, low]
     pub angle: Option<f32>,
 }
@@ -14,7 +13,7 @@ impl Bound {
         Self {
             dim: Vec2::new(0.0, 0.0),
             pos: Vec2::new(0.0, 0.0),
-            offset: Vec2::new(0.0, 0.0),
+            //offset: Vec2::new(0.0, 0.0),
             shadow: [0.0, 0.0, 0.0, 0.0],
             angle: None,
         }
@@ -171,6 +170,13 @@ pub struct Element {
 }
 
 impl Element {
+    //     pub fn inside<F>(&mut self, pos: &Vec2<f32>, dim: &Vec2<f32>, mut f: F)
+    //     where
+    //         F: FnMut(&mut Element),
+    //     {
+    //         f(self);
+    //     }
+
     pub fn position<F>(&mut self, mut f: F)
     where
         F: FnMut(&mut Bound),
